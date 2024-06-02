@@ -9,8 +9,8 @@
 			"import": "./package.json"
 		},
 		".": {
-			"import": "./dist/scripts-injector.js",
-			"require": "./dist/scripts-injector.js"
+			"import": "./scripts-injector.js",
+			"require": "./scripts-injector.js"
 		},
 		"./types": "./types.d.ts"
 	},
@@ -23,8 +23,5 @@
 	"peerDependencies": {
 		"typescript": "^5.0.0"
 	},
-	"files": [
-		"scripts-injector.js",
-		"/types.d.ts"
-	]
+	"files": ["scripts-injector.js", "/types.d.ts"]
 }
