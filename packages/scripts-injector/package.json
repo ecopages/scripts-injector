@@ -1,0 +1,27 @@
+{
+	"name": "@ecopages/scripts-injector",
+	"main": "scripts-injector.js",
+	"version": "0.0.0",
+	"type": "module",
+	"types": "types.d.ts",
+	"exports": {
+		"./package.json": {
+			"import": "./package.json"
+		},
+		".": {
+			"import": "./dist/scripts-injector.js",
+			"require": "./dist/scripts-injector.js"
+		},
+		"./types": "./types.d.ts"
+	},
+	"scripts": {
+		"build:lib": "rm -rf dist && bun build --entry scripts-injector.ts --outdir . --minify"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"files": ["scripts-injector.js", "/types.d.ts"]
+}

@@ -1,0 +1,25 @@
+{
+	"name": "scripts-injector",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"clean": "rm -rf .eco node_modules bun.lockb && bun install && bun run build:all",
+		"format": "bunx @biomejs/biome format --write .",
+		"lint": "bunx @biomejs/biome check --apply .",
+		"build:all": "bun run --filter '*' build:lib",
+		"changeset": "changeset",
+		"prerelease": "bun run build:all",
+		"release": "changeset publish"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"devDependencies": {
+		"@changesets/changelog-github": "^0.5.0",
+		"@changesets/cli": "^2.27.5",
+		"@types/bun": "latest",
+		"husky": "^9.0.10",
+		"lint-staged": "^15.2.2"
+	},
+	"workspaces": ["packages/*"]
+}
