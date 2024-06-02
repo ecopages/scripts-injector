@@ -1,7 +1,7 @@
 {
 	"name": "@ecopages/scripts-injector",
 	"main": "scripts-injector.js",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"type": "module",
 	"types": "types.d.ts",
 	"exports": {
@@ -23,5 +23,8 @@
 	"peerDependencies": {
 		"typescript": "^5.0.0"
 	},
-	"files": ["scripts-injector.js", "/types.d.ts"]
+	"files": [
+		"scripts-injector.js",
+		"/types.d.ts"
+	]
 }
