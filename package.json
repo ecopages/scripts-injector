@@ -2,12 +2,16 @@
 	"name": "scripts-injector",
 	"module": "index.ts",
 	"type": "module",
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
 		"clean": "rm -rf .eco node_modules bun.lockb && bun install && bun run build:all",
 		"format": "bunx @biomejs/biome format --write .",
 		"lint": "bunx @biomejs/biome check --apply .",
 		"build:all": "bun run --filter '*' build:lib",
 		"changeset": "changeset",
+		"version": "changeset version",
 		"prerelease": "bun run build:all",
 		"release": "changeset publish",
 		"test:run": "bun run --filter '*' test:run"
