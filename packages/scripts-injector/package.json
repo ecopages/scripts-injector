@@ -15,10 +15,14 @@
 		"./types": "./types.d.ts"
 	},
 	"scripts": {
-		"build:lib": "rm -rf dist && bun build --entry scripts-injector.ts --outdir . --minify"
+		"build:lib": "rm -rf dist && bun build --entry scripts-injector.ts --outdir . --minify",
+		"test": "vitest",
+		"test:run": "vitest run"
 	},
 	"devDependencies": {
-		"@types/bun": "latest"
+		"@types/bun": "latest",
+		"@vitest/browser-playwright": "^4.0.16",
+		"vitest": "^4.0.16"
 	},
 	"peerDependencies": {
 		"typescript": "^5.0.0"

@@ -176,3 +176,6 @@ dist
 
 # Files
 scripts-injector.js
+
+# Test files
+__screenshots__

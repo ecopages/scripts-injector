@@ -9,7 +9,8 @@
 		"build:all": "bun run --filter '*' build:lib",
 		"changeset": "changeset",
 		"prerelease": "bun run build:all",
-		"release": "changeset publish"
+		"release": "changeset publish",
+		"test:run": "bun run --filter '*' test:run"
 	},
 	"peerDependencies": {
 		"typescript": "^5.0.0"
