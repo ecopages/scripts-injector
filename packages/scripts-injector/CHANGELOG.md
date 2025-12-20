@@ -1,5 +1,14 @@
 # @ecopages/scripts-injector
 
+## 0.1.2
+
+### Patch Changes
+
+- [`e3cd579`](https://github.com/ecopages/scripts-injector/commit/e3cd57980931b15191927318e721640aec612b4e) - - Refactor to add TSDoc for all public methods
+  - Improve cleanup in `disconnectedCallback`
+  - Prevent duplicate script injections
+  - Fix custom element re-registration issues for better HMR support
+
 ## 0.1.1
 
 ### Patch Changes
