@@ -1,0 +1,64 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-primary: var(--color-blue-600);
+  --color-brand-hover: var(--color-blue-700);
+  --color-background-accent: var(--color-gray-50);
+  --font-display: 'Inter', sans-serif;
+}
+
+@layer components {
+	.showcase {
+		@apply flex flex-col gap-16 md:gap-32 max-w-5xl mx-auto px-6 overflow-hidden;
+	}
+
+	.showcase-section {
+		@apply flex flex-col md:flex-row gap-8 md:gap-12 items-center w-full;
+	}
+
+    .showcase-section:nth-child(even) {
+        @apply md:flex-row-reverse;
+    }
+
+    .showcase-info {
+        @apply w-full md:w-auto flex-1 md:basis-2/5 space-y-4 md:space-y-5 opacity-0 translate-y-8 transition-all duration-175 ease-out;
+    }
+
+    .showcase-demo {
+        @apply flex-1 md:basis-3/5 w-full;
+    }
+
+	.section-title {
+		@apply text-3xl font-bold text-gray-900 dark:text-white tracking-tight;
+	}
+
+	.section-desc {
+		@apply text-lg text-gray-600 dark:text-gray-400 leading-relaxed font-medium;
+	}
+
+    .btn {
+        @apply px-6 py-3 font-semibold text-sm transition-all duration-200 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl no-underline disabled:opacity-50 disabled:cursor-not-allowed select-none;
+        text-decoration: none !important;
+    }
+
+    .btn-primary {
+        @apply bg-brand-primary text-white hover:bg-brand-hover shadow-lg shadow-brand-primary/25 hover:shadow-brand-primary/40 hover:-translate-y-0.5 active:translate-y-0;
+        color: white !important;
+    }
+    
+    .btn-secondary {
+        @apply bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0;
+    }
+
+    .btn-ui {
+        @apply px-4 py-2 rounded-lg text-sm bg-gray-900 text-white hover:bg-gray-800 shadow-md hover:shadow-lg active:scale-95 transition-transform;
+    }
+
+    .input-field {
+        @apply w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary transition-all shadow-sm;
+    }
+
+    .select-field {
+        @apply w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary transition-all shadow-sm appearance-none;
+    }
+}
