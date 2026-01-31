@@ -13,6 +13,7 @@ export class ThemeToggleElement extends RadiantElement {
 		const isLight = document.documentElement.classList.contains('light');
 		const nextIsDark = isLight;
 		this.updateTheme(nextIsDark);
+		window.dispatchEvent(new CustomEvent('theme-changed'));
 	}
 
 	initTheme() {

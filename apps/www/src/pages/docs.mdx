@@ -10,6 +10,8 @@ export const config = {
 
 The Scripts Injector is a custom element designed to dynamically load scripts into your web page. It provides a way to load scripts based on certain conditions and events.
 
+<br />
+
 ## Usage
 
 To use the Scripts Injector, you need to include it in your HTML:
@@ -17,6 +19,8 @@ To use the Scripts Injector, you need to include it in your HTML:
 ```tsx
 <scripts-injector></scripts-injector>
 ```
+
+<br />
 
 ## Props
 
@@ -30,6 +34,8 @@ The ScriptInjectorProps type defines the properties that can be used to control 
 
 `scripts`: This property should be a comma-separated string of scripts to be loaded. For example, `<script-injector scripts="script1.js,script2.js"></script-injector>` will load script1.js and script2.js.
 
+<br />
+
 ## Latest Features
 
 ### Full Event Replay with Property Preservation
@@ -42,9 +48,13 @@ For all interaction events, the Scripts Injector intercepts the initial event, p
 - **Focus events**: Preserve `relatedTarget`
 - **Touch events**: Preserve `touches`, `targetTouches`, `changedTouches`, and modifier keys
 
+<br />
+
 ### Race Condition Prevention
 
 Multiple script injectors requesting the same script will coordinate to prevent duplicate loading. A static registry tracks scripts currently being loaded, ensuring only one network request is made even when multiple injectors trigger simultaneously.
+
+<br />
 
 ### Load Reason Tracking
 
@@ -52,6 +62,8 @@ After loading, the element receives a `data-load-reason` attribute indicating wh
 - `idle` - Loaded via `on:idle`
 - `visible` - Loaded via `on:visible`
 - `interaction:click`, `interaction:mouseenter`, etc. - Loaded via the specific interaction event
+
+<br />
 
 ### Error Tracking
 
@@ -67,6 +79,8 @@ document.addEventListener('data-loaded', (event) => {
 });
 ```
 
+<br />
+
 ## Typical usage
 
 This passage provides a standard use case for the custom element. The script is designed to load when the user interacts with it, either through mouse entry or a focus event. If multiple script injectors are present with the same script, only the first one will execute the load. This is because once a script is loaded, all script injectors are notified and subsequently remove the script from their loading responsibilities.
@@ -76,6 +90,8 @@ This passage provides a standard use case for the custom element. The script is 
   <lit-counter class="lit-counter" count={8}></lit-counter>
 </script-injector>
 ```
+
+<br />
 
 ## Supported Events
 
@@ -88,6 +104,8 @@ The `on:interaction` prop supports a wide range of DOM events, as defined in `In
 - **Form:** `input`, `change`, `submit`
 - **UI:** `scroll`, `resize`
 
+<br />
+
 ## Data Attributes
 
 After script loading completes, the following attributes are set on the element:
@@ -97,6 +115,8 @@ After script loading completes, the following attributes are set on the element:
 | `data-loaded` | Present when all scripts have been loaded (or attempted) |
 | `data-load-reason` | The trigger that caused scripts to load (`idle`, `visible`, `interaction:<event>`) |
 | `data-error` | Comma-separated list of script URLs that failed to load (only if errors occurred) |
+
+<br />
 
 ## Real World Examples
 
