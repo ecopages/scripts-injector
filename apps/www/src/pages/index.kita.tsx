@@ -41,7 +41,7 @@ Take full control of your scripts with a declarative approach.<br class="hidden 
                             <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mt-2">on:interaction="click"</span>
                         </div>
                         <div class="showcase-demo">
-                            <div class="flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-xl p-12 min-h-[300px]">
+                            <div class="flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-xl p-12 min-h-75">
                                 <div class="text-center">
                                     <scripts-injector scripts="/scripts/demo-click.js" on:interaction="click">
                                         <button id="demo-click-btn" class="btn btn-primary w-full justify-center">

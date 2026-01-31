@@ -1,5 +1,5 @@
 {
-	"name": "@ecopages/starter-jsx",
+	"name": "www",
 	"private": true,
 	"scripts": {
 		"start": "ecopages start",

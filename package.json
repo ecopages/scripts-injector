@@ -7,15 +7,16 @@
 	},
 	"scripts": {
 		"clean": "rm -rf .eco node_modules bun.lockb && bun install && bun run build:all",
-		"format": "bunx @biomejs/biome format --write .",
-		"lint": "bunx @biomejs/biome check --apply .",
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
 		"build:all": "bun run --filter '*' build:lib",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"prerelease": "bun run build:all",
 		"release": "changeset publish",
 		"test:run": "bun run --filter '*' test:run",
-		"dev:www": "bun run --filter 'www' dev"
+		"dev:www": "bun run --filter 'www' dev",
+		"prepare": "husky"
 	},
 	"peerDependencies": {
 		"typescript": "^5.0.0"
@@ -26,7 +27,14 @@
 		"@playwright/test": "^1.58.1",
 		"@types/bun": "latest",
 		"husky": "^9.0.10",
-		"lint-staged": "^15.2.2"
+		"lint-staged": "^15.2.2",
+		"oxlint": "latest"
 	},
-	"workspaces": ["packages/*", "apps/*"]
+	"lint-staged": {
+		"*.{js,jsx,ts,tsx,mjs,cjs}": "oxlint --fix"
+	},
+	"workspaces": [
+		"packages/*",
+		"apps/*"
+	]
 }
