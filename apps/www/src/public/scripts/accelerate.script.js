@@ -99,7 +99,3 @@ initAccelerationEffect();
 window.addEventListener('theme-changed', () => {
 	initAccelerationEffect();
 });
-
-document.addEventListener('eco:after-swap', ({detail}) => {
-	if (detail.url.pathname === '/')initAccelerationEffect();
-});

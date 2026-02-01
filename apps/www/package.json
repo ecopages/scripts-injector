@@ -9,7 +9,6 @@
 		"watch:dev": "ecopages watch:dev"
 	},
 	"devDependencies": {
-		"@ecopages/browser-router": "npm:@jsr/ecopages__browser-router@latest",
 		"@ecopages/core": "npm:@jsr/ecopages__core@latest",
 		"@ecopages/image-processor": "npm:@jsr/ecopages__image-processor@latest",
 		"@ecopages/kitajs": "npm:@jsr/ecopages__kitajs@latest",

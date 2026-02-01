@@ -11,7 +11,7 @@ export default eco.page({
 		return (
 			<div class="showcase">
 				<section class="group flex flex-col items-center justify-center py-15 md:py-40 text-center max-w-7xl mx-auto">
-					<h1 class="text-5xl md:text-3xl md:text-6xl font-black tracking-tighter text-gray-900 dark:text-white mb-8 leading-[0.95] select-none">
+					<h1 class="text-5xl md:text-6xl font-black tracking-tighter text-gray-900 dark:text-white mb-8 leading-[0.95] select-none">
 						Orchestrate scripts.
 						<br />
 						<scripts-injector scripts="/scripts/accelerate.script.js" on:idle>
