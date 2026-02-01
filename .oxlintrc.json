@@ -1,0 +1,11 @@
+{
+	"plugins": ["typescript"],
+	"rules": {
+		"no-constant-condition": "off",
+		"no-empty": "off",
+		"no-unused-vars": "warn",
+		"prefer-const": "warn",
+		"no-var": "warn",
+		"no-undef": "off"
+	}
+}

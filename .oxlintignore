@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+coverage/
+.nyc_output/
+.vscode/
+.env
+.eco/
+build/
