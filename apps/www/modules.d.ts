@@ -1,3 +1,4 @@
-/// <reference types="../../../node_modules/@ecopages/core/declarations" />
-/// <reference types="../../../node_modules/@ecopages/core/env" />
-/// <reference types="../../../node_modules/@ecopages/image-processor/types" />
+/// <reference types="../../@ecopages/core/declarations" />
+/// <reference types="../../@ecopages/core/env" />
+/// <reference types="../../@ecopages/image-processor/types" />
+
