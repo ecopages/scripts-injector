@@ -275,6 +275,9 @@ export class ScriptsInjector extends HTMLElement {
    * 2. Loads the assigned scripts.
    * 3. Replays the event once scripts are loaded with all original properties preserved.
    *
+   * If the event target is the scripts-injector element itself, the event is not
+   * replayed since there's no meaningful action on the container element.
+   *
    * For click events on HTMLElements, uses the native `.click()` method to ensure
    * default behaviors (like navigation or form submission) are triggered.
    * For other events, clones and dispatches a new event with all properties.
@@ -284,6 +287,8 @@ export class ScriptsInjector extends HTMLElement {
     event.preventDefault();
 
     await this.loadScripts(`interaction:${event.type}`);
+
+    if (event.target === this) return;
 
     if (event.type === "click" && event.target instanceof HTMLElement) {
       event.target.click();
