@@ -16,9 +16,7 @@ export default eco.page({
 						Orchestrate scripts.
 						<br />
 						<scripts-injector scripts="/scripts/accelerate.script.js" on:idle>
-							<span class="text-brand-primary accelerate-word" data-word="Accelerate the Page">
-								Accelerate your page.
-							</span>
+							<span class="text-brand-primary accelerate-word">Accelerate your page.</span>
 						</scripts-injector>
 					</h1>
 					<p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed mb-12 font-medium">
