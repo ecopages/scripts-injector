@@ -36,6 +36,9 @@ jobs:
             - name: Build Libraries
               run: bun run build:all
 
+            - name: Install Playwright Browsers
+              run: npx playwright install --with-deps 
+
             - name: Create Release Pull Request or Publish
               id: changesets
               uses: changesets/action@v1
