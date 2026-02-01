@@ -63,6 +63,11 @@ const config = await new ConfigBuilder()
 		html: 'html.kita.tsx',
 		seo: 'seo.kita.tsx',
 	})
+	.setDefaultMetadata({
+		title: 'Scripts Injector - Orchestrate your scripts declaratively',
+		description:
+			'Scripts Injector is a lightweight library that allows you to orchestrate your scripts declaratively with ease.',
+	})
 	.setError404Template('404.kita.tsx')
 	.build();
 
