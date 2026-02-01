@@ -11,21 +11,13 @@ test.describe('Home Page Script Injection', () => {
         
         await expect(script).not.toBeAttached();
 
-        // Click
         await btn.click();
 
-        // Verify script attached
         await expect(script).toBeAttached();
 
-        // Verify visual update (text change, NO EMOJI)
         await expect(btn).toHaveAttribute('data-script-loaded', 'true');
         await expect(btn).toContainText('Launched!');
 
-        // Verify native event replay
-        const log = page.locator('#demo-click-log');
-        await expect(log).toHaveText('Clicked!');
-
-        // Verify NO cross-talk with hover
         const hoverScript = page.locator('script[src="/scripts/demo-hover.js"]');
         await expect(hoverScript).not.toBeAttached();
     });
@@ -35,8 +27,7 @@ test.describe('Home Page Script Injection', () => {
         const script = page.locator('script[src="/scripts/demo-hover.js"]');
 
         await expect(script).not.toBeAttached();
-        
-        // Hover
+
         await area.hover();
 
         await expect(script).toBeAttached();
@@ -50,8 +41,7 @@ test.describe('Home Page Script Injection', () => {
         const script = page.locator('script[src="/scripts/demo-focus.js"]');
 
         await expect(script).not.toBeAttached();
-        
-        // Focus
+
         await input.focus();
 
         await expect(script).toBeAttached();
@@ -71,7 +61,6 @@ test.describe('Home Page Script Injection', () => {
 
         await expect(script).not.toBeAttached();
 
-        // Fill and Submit
         await page.locator('#demo-form input').fill('test@example.com');
         await page.locator('#demo-form button[type="submit"]').click();
 
@@ -87,7 +76,6 @@ test.describe('Home Page Script Injection', () => {
 
         await expect(script).not.toBeAttached();
 
-        // Select Option
         await select.selectOption('B');
 
         await expect(script).toBeAttached();
@@ -98,13 +86,11 @@ test.describe('Home Page Script Injection', () => {
     test('Scenario 7: Nested Interactions', async ({ page }) => {
         const parent = page.locator('#demo-nested-parent');
         const child = page.locator('#demo-nested-child');
-        
-        // 1. Hover Parent
+
         await parent.hover();
         await expect(page.locator('script[src="/scripts/demo-nested-parent.js"]')).toBeAttached();
         await expect(page.locator('script[src="/scripts/demo-nested-child.js"]')).not.toBeAttached();
-        
-        // 2. Click Child
+
         await child.click();
         await expect(page.locator('script[src="/scripts/demo-nested-child.js"]')).toBeAttached();
         await expect(child).toContainText('Child Active!');

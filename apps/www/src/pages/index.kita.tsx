@@ -202,12 +202,13 @@ export default eco.page({
                   on:interaction="submit"
                   class="w-full max-w-sm"
                 >
-                  <form id="demo-form" class="space-y-4">
+                  <form id="demo-form" class="space-y-4" onsubmit="return false">
                     <h3 class="font-bold text-gray-900 dark:text-white mt-0">
                       Newsletter
                     </h3>
                     <input
                       type="email"
+                      name="email"
                       placeholder="you@example.com"
                       class="input-field"
                       required
