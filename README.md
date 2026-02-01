@@ -4,7 +4,7 @@ The Scripts Injector is a custom element designed to dynamically load scripts in
 
 ## Packages
 
-- [@ecopages/scripts-injector](./packages/scripts-injector/README.md)
+-   [@ecopages/scripts-injector](./packages/scripts-injector/README.md)
 
 ## Getting Started
 
@@ -23,6 +23,7 @@ npm install @ecopages/scripts-injector
 ## Usage Examples
 
 ### 1. Load on Idle
+
 Load non-critical scripts (e.g., analytics) when the browser is idle.
 
 ```tsx
@@ -32,20 +33,22 @@ Load non-critical scripts (e.g., analytics) when the browser is idle.
 ```
 
 ### 2. Load on Interaction
+
 Load heavy interactive scripts only when the user interacts (e.g., click, hover).
 
 ```tsx
 <scripts-injector scripts="heavy-chart.js" on:interaction="mouseenter,focusin">
-  <button>Show Chart</button>
+	<button>Show Chart</button>
 </scripts-injector>
 ```
 
 ### 3. Load on Visible
+
 Load scripts when an element enters the viewport.
 
 ```tsx
 <scripts-injector scripts="lazy-image.js" on:visible="50px">
-  <img src="..." />
+	<img src="..." />
 </scripts-injector>
 ```
 

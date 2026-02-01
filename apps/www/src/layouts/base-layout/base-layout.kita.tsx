@@ -19,7 +19,7 @@ export const BaseLayout = eco.component<BaseLayoutProps>({
 			<body>
 				<header class="site-header">
 					<a href="/" class="site-logo">
-					@ecopages/scripts-injector	<span class="site-logo__version">{pkg.version}</span>
+						@ecopages/scripts-injector <span class="site-logo__version">{pkg.version}</span>
 					</a>
 					<ThemeToggle />
 				</header>

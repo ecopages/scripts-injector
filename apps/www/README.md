@@ -22,8 +22,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 To learn more about Ecopages, take a look at the following resources:
 
-- [Ecopages Documentation](https://ecopages.app) - learn about Ecopages features and API.
-- [Ecopages GitHub Repository](https://github.com/ecopages/ecopages) - contribute or file issues.
+-   [Ecopages Documentation](https://ecopages.app) - learn about Ecopages features and API.
+-   [Ecopages GitHub Repository](https://github.com/ecopages/ecopages) - contribute or file issues.
 
 ## Build
 

@@ -21,16 +21,7 @@
 		}
 	},
 	"files": {
-		"ignore": [
-			"node_modules",
-			"dist",
-			"out",
-			"coverage",
-			".nyc_output",
-			".vscode",
-			".env",
-			".eco"
-		]
+		"ignore": ["node_modules", "dist", "out", "coverage", ".nyc_output", ".vscode", ".env", ".eco"]
 	},
 	"javascript": {
 		"parser": {

@@ -1,5 +1,3 @@
 {
-	"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
-		"bun run lint:fix"
-	]
+	"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": ["bun run lint:fix"]
 }

@@ -9,12 +9,14 @@
 		"clean": "rm -rf .eco node_modules bun.lockb && bun install && bun run build:all",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
+		"format": "bunx prettier --write .",
 		"build:all": "bun run --filter '*' build:lib",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"prerelease": "bun run build:all",
 		"release": "changeset publish",
 		"test:run": "bun run --filter '*' test:run",
+		"test:e2e": "playwright test",
 		"dev:www": "bun run --filter 'www' dev",
 		"prepare": "husky"
 	},
@@ -28,7 +30,8 @@
 		"@types/bun": "latest",
 		"husky": "^9.0.10",
 		"lint-staged": "^15.2.2",
-		"oxlint": "latest"
+		"oxlint": "latest",
+		"prettier": "^3.7.4"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,mjs,cjs}": "oxlint --fix"
