@@ -18,6 +18,7 @@
 		"test:run": "bun run --filter '*' test:run",
 		"test:e2e": "playwright test",
 		"dev:www": "bun run --filter 'www' dev",
+		"build:www": "bun run --filter 'www' build",
 		"prepare": "husky"
 	},
 	"peerDependencies": {
