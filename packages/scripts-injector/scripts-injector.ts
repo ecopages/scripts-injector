@@ -3,6 +3,12 @@ import type { Conditions, OnDataLoadedEvent, ScriptInjectorProps } from './types
 /**
  * Static set tracking scripts currently being loaded across all instances.
  * Prevents race conditions when multiple injectors try to load the same script simultaneously.
+ *
+ * @remarks
+ * Scripts are added to this set before loading begins and removed in a `finally` block
+ * after `Promise.allSettled` completes, ensuring cleanup occurs even if an error is thrown
+ * during result processing. This prevents memory leaks where script URLs could otherwise
+ * remain in the set indefinitely, blocking future load attempts.
  */
 const scriptsInFlight = new Set<string>();
 
@@ -429,13 +435,16 @@ export class ScriptsInjector extends HTMLElement {
 
 		const results = await Promise.allSettled(loadResults.map((r) => r.promise));
 
-		for (let i = 0; i < results.length; i++) {
-			const result = results[i];
-			const scriptUrl = loadResults[i].script;
-			scriptsInFlight.delete(scriptUrl);
-
-			if (result.status === 'rejected') {
-				this.failedScripts.push(scriptUrl);
+		try {
+			for (let i = 0; i < results.length; i++) {
+				const result = results[i];
+				if (result.status === 'rejected') {
+					this.failedScripts.push(loadResults[i].script);
+				}
+			}
+		} finally {
+			for (const { script } of loadResults) {
+				scriptsInFlight.delete(script);
 			}
 		}
 
