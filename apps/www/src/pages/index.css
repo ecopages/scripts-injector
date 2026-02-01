@@ -76,7 +76,7 @@
 	display: inline-flex;
 	gap: 0;
 	perspective: 1200px;
-	animation: fadeIn 0.75s ease-out;
+	animation: fadeIn 0.175s ease-out;
 }
 
 .accelerate-word span {

@@ -1,4 +1,12 @@
-const INITIAL_DELAY = 0.5;
+const SPEED_MULTIPLIER = 1.4;
+const ANIMATION_DURATION = 0.22;
+const INITIAL_DELAY = 0.18;
+const STAGGER_INTERVAL = 0.02;
+const MIN_STAGGER = 0.01;
+
+function easeOutOct(value) {
+	return 1 - Math.pow(1 - value, 8);
+}
 
 function initAccelerationEffect() {
 	try {
@@ -6,14 +14,24 @@ function initAccelerationEffect() {
 
 		accelerateWords.forEach((element) => {
 			const word = element.getAttribute('data-word') || element.textContent || '';
+			const letters = word.split('');
+			const lastIndex = Math.max(letters.length - 1, 1);
 
-			element.innerHTML = word
-				.split('')
+			element.innerHTML = letters
 				.map(
-					(letter, index) =>
-						`<span data-letter="${index}" style="display: inline-block; animation: spin 0.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards; animation-delay: ${
-							INITIAL_DELAY + index * 0.04
-						}s">${letter === ' ' ? '&nbsp;' : letter}</span>`,
+					(letter, index) => {
+						const progress = index / lastIndex;
+						const easedIndex = easeOutOct(progress) * lastIndex;
+						const easedDelay = easedIndex * (STAGGER_INTERVAL - MIN_STAGGER);
+						const baseDelay = INITIAL_DELAY + index * MIN_STAGGER + easedDelay;
+						const delay = baseDelay / SPEED_MULTIPLIER;
+
+						return `<span data-letter="${index}" style="display: inline-block; animation: spin ${
+							ANIMATION_DURATION / SPEED_MULTIPLIER
+						}s cubic-bezier(0.42, 0, 0.58, 1) forwards; animation-delay: ${delay}s">${
+							letter === ' ' ? '&nbsp;' : letter
+						}</span>`;
+					},
 				)
 				.join('');
 

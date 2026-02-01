@@ -13,11 +13,11 @@ export default eco.page({
 			<div class="showcase">
 				<section class="group flex flex-col items-center justify-center py-40 text-center max-w-7xl mx-auto">
 					<h1 class="text-3xl md:text-6xl font-black tracking-tighter text-gray-900 dark:text-white mb-8 leading-[0.95] select-none">
-						Orchestrate Your Scripts.
+						Orchestrate scripts.
 						<br />
 						<scripts-injector scripts="/scripts/accelerate.script.js" on:idle>
 							<span class="text-brand-primary accelerate-word" data-word="Accelerate the Page">
-								Accelerate the Page
+								Accelerate your page.
 							</span>
 						</scripts-injector>
 					</h1>
