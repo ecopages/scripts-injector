@@ -4,7 +4,6 @@ import { BaseLayout } from '@/layouts/base-layout/base-layout.kita';
 export default eco.page({
 	dependencies: {
 		stylesheets: ['./index.css'],
-		scripts: ['./on-view.script.ts'],
 		components: [BaseLayout],
 	},
 	layout: BaseLayout,

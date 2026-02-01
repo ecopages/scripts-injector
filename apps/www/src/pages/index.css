@@ -21,7 +21,7 @@
 	}
 
 	.showcase-info {
-		@apply w-full md:w-auto flex-1 md:basis-2/5 space-y-4 md:space-y-5 opacity-0 translate-y-8 transition-all duration-175 ease-out;
+		@apply w-full md:w-auto flex-1 md:basis-2/5 space-y-4 md:space-y-5;
 	}
 
 	.showcase-demo {
@@ -76,7 +76,8 @@
 	display: inline;
 	gap: 0;
 	perspective: 1200px;
-	animation: fadeIn 0.175s ease-out;
+	opacity: 0;
+	animation: fadeIn 0.175s ease-out forwards;
 	white-space: normal;
 }
 
