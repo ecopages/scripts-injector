@@ -10,6 +10,76 @@ To use the Scripts Injector, you need to include it in your HTML:
 <scripts-injector></scripts-injector>
 ```
 
+## Web Component Examples
+
+### Load on idle
+
+```tsx
+<scripts-injector scripts="/analytics.js" on:idle>
+	<div>Content</div>
+</scripts-injector>
+```
+
+### Load on interaction
+
+```tsx
+<scripts-injector scripts="/heavy-chart.js" on:interaction="mouseenter,focusin">
+	<button>Open chart</button>
+</scripts-injector>
+```
+
+### Load using injector map
+
+```html
+<scripts-injector>
+	<script type="ecopages/injector-map">
+		{
+			"on:idle": { "scripts": ["/_assets/tracker.js"] },
+			"on:interaction": {
+				"value": "click",
+				"scripts": ["/_assets/heavy-ui.js"]
+			}
+		}
+	</script>
+	<div class="my-component">...</div>
+</scripts-injector>
+```
+
+## Global Injector Examples (No Web Component)
+
+### 1) Define a global trigger map
+
+```html
+<script type="ecopages/global-injector-map">
+{
+	"analytics-trigger": {
+		"on:idle": { "scripts": ["/_assets/tracker.js"] }
+	},
+	"card-trigger": {
+		"on:interaction": {
+			"value": "click",
+			"scripts": ["/_assets/card-interactions.js"]
+		}
+	}
+}
+</script>
+```
+
+### 2) Bind standard elements with `data-eco-trigger`
+
+```html
+<div data-eco-trigger="analytics-trigger"></div>
+<button data-eco-trigger="card-trigger">Open Card</button>
+```
+
+### 3) Initialize
+
+```ts
+import { initGlobalInjector } from '@ecopages/scripts-injector/global';
+
+initGlobalInjector();
+```
+
 ## Props
 
 The ScriptInjectorProps type defines the properties that can be used to control the behavior of the script-injector custom element. Here are the available properties:
@@ -28,11 +98,11 @@ The ScriptInjectorProps type defines the properties that can be used to control 
 
 For all interaction events, the Scripts Injector intercepts the initial event, prevents the default action, loads the required script, and then **replays the event** with all original properties preserved. This ensures that user actions are never lost, even if they happen before the script is fully loaded.
 
--   **Click events**: Use native `.click()` for best compatibility with links and forms
--   **Mouse events**: Preserve `clientX`, `clientY`, `screenX`, `screenY`, `button`, `buttons`, and modifier keys
--   **Keyboard events**: Preserve `key`, `code`, `location`, `repeat`, and modifier keys
--   **Focus events**: Preserve `relatedTarget`
--   **Touch events**: Preserve `touches`, `targetTouches`, `changedTouches`, and modifier keys
+- **Click events**: Use native `.click()` for best compatibility with links and forms
+- **Mouse events**: Preserve `clientX`, `clientY`, `screenX`, `screenY`, `button`, `buttons`, and modifier keys
+- **Keyboard events**: Preserve `key`, `code`, `location`, `repeat`, and modifier keys
+- **Focus events**: Preserve `relatedTarget`
+- **Touch events**: Preserve `touches`, `targetTouches`, `changedTouches`, and modifier keys
 
 ### Race Condition Prevention
 
@@ -42,9 +112,9 @@ Multiple script injectors requesting the same script will coordinate to prevent 
 
 After loading, the element receives a `data-load-reason` attribute indicating what triggered the load:
 
--   `idle` - Loaded via `on:idle`
--   `visible` - Loaded via `on:visible`
--   `interaction:click`, `interaction:mouseenter`, etc. - Loaded via the specific interaction event
+- `idle` - Loaded via `on:idle`
+- `visible` - Loaded via `on:visible`
+- `interaction:click`, `interaction:mouseenter`, etc. - Loaded via the specific interaction event
 
 ### Error Tracking
 
@@ -70,16 +140,36 @@ This passage provides a standard use case for the custom element. The script is 
 </script-injector>
 ```
 
+## Alternative Usage: Multi-Trigger Configuration
+
+To avoid deeply nested `<scripts-injector>` instances when different scripts inside a single component require different triggers, you can use the JSON map configuration approach. This allows you to flatten the DOM structure and configure multiple triggers simultaneously on a single injector element:
+
+```html
+<scripts-injector>
+	<script type="ecopages/injector-map">
+		{
+			"on:idle": { "scripts": ["/_assets/tracker.js"] },
+			"on:interaction": {
+				"value": "click",
+				"scripts": ["/_assets/heavy-ui.js"]
+			}
+		}
+	</script>
+	<!-- Component Content -->
+	<div class="my-component">...</div>
+</scripts-injector>
+```
+
 ## Supported Events
 
 The `on:interaction` prop supports a wide range of DOM events, as defined in `InteractionEvent`.
 
--   **Mouse:** `click`, `dblclick`, `mousedown`, `mouseup`, `mouseenter`, `mouseleave`, `mousemove`, `mouseover`, `mouseout`
--   **Touch:** `touchstart`, `touchend`, `touchmove`, `touchcancel`
--   **Focus:** `focus`, `blur`, `focusin`, `focusout`
--   **Keyboard:** `keydown`, `keypress`, `keyup`
--   **Form:** `input`, `change`, `submit`
--   **UI:** `scroll`, `resize`
+- **Mouse:** `click`, `dblclick`, `mousedown`, `mouseup`, `mouseenter`, `mouseleave`, `mousemove`, `mouseover`, `mouseout`
+- **Touch:** `touchstart`, `touchend`, `touchmove`, `touchcancel`
+- **Focus:** `focus`, `blur`, `focusin`, `focusout`
+- **Keyboard:** `keydown`, `keypress`, `keyup`
+- **Form:** `input`, `change`, `submit`
+- **UI:** `scroll`, `resize`
 
 ## Data Attributes
 

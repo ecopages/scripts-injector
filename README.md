@@ -4,7 +4,7 @@ The Scripts Injector is a custom element designed to dynamically load scripts in
 
 ## Packages
 
--   [@ecopages/scripts-injector](./packages/scripts-injector/README.md)
+- [@ecopages/scripts-injector](./packages/scripts-injector/README.md)
 
 ## Getting Started
 
@@ -21,6 +21,8 @@ npm install @ecopages/scripts-injector
 ```
 
 ## Usage Examples
+
+## Web Component (`<scripts-injector>`) Examples
 
 ### 1. Load on Idle
 
@@ -52,4 +54,69 @@ Load scripts when an element enters the viewport.
 </scripts-injector>
 ```
 
-For detailed documentation, visit the [Documentation Page](./apps/www/src/pages/docs.mdx) or run the demo app.
+### 4. Multi-Trigger Configuration
+
+To prevent deeply nested injectors when combining multiple triggers, you can provide an internal `<script>` tag mapping.
+
+```html
+<scripts-injector>
+	<script type="ecopages/injector-map">
+		{
+			"on:idle": { "scripts": ["/_assets/tracker.js"] },
+			"on:interaction": {
+				"value": "click",
+				"scripts": ["/_assets/heavy-ui.js"]
+			}
+		}
+	</script>
+	<div class="my-component">...</div>
+</scripts-injector>
+```
+
+## Global Injector Examples (No Web Component)
+
+Use a global JSON map plus `data-eco-trigger` attributes when you want lazy loading without wrapping markup in a custom element.
+
+### 1. Add a global map
+
+```html
+<script type="ecopages/global-injector-map">
+{
+	"analytics-trigger": {
+		"on:idle": {
+			"scripts": ["/_assets/tracker.js"]
+		}
+	},
+	"hero-trigger": {
+		"on:interaction": {
+			"value": "mouseenter,focusin",
+			"scripts": ["/_assets/hero-effects.js"]
+		},
+		"on:visible": {
+			"value": "100px",
+			"scripts": ["/_assets/hero-visual.js"]
+		}
+	}
+}
+</script>
+```
+
+### 2. Bind standard elements
+
+```html
+<div data-eco-trigger="analytics-trigger"></div>
+
+<section data-eco-trigger="hero-trigger">
+	<h2>Interactive Hero</h2>
+</section>
+```
+
+### 3. Initialize the global injector
+
+```ts
+import { initGlobalInjector } from '@ecopages/scripts-injector/global';
+
+initGlobalInjector();
+```
+
+For detailed documentation, visit the [Web Component docs](./apps/www/src/pages/docs.mdx) and [Global Injector docs](./apps/www/src/pages/global.mdx), or run the demo app.

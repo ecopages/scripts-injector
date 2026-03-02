@@ -8,6 +8,7 @@ import { tailwindV4Preset } from '@ecopages/postcss-processor/presets/tailwind-v
 import remarkGfm from 'remark-gfm';
 import rehypePrettyCode from 'rehype-pretty-code';
 import { rehypeSimpleTableWrapper } from './src/plugins/rehype-simple-table-wrapper';
+import { remarkEscapeInlineCodeHtml } from '@/plugins/remark-escape-inline-code-html';
 import { transformerEscapeHtml } from './src/plugins/transformer-escape-html';
 
 const config = await new ConfigBuilder()
@@ -18,7 +19,7 @@ const config = await new ConfigBuilder()
 		mdxPlugin({
 			compilerOptions: {
 				jsxImportSource: '@kitajs/html',
-				remarkPlugins: [remarkGfm],
+				remarkPlugins: [remarkGfm, remarkEscapeInlineCodeHtml],
 				rehypePlugins: [
 					[
 						rehypePrettyCode,

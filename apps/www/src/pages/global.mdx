@@ -1,0 +1,97 @@
+import { eco } from '@ecopages/core';
+import { BaseLayout } from '@/layouts/base-layout/base-layout.kita';
+
+export const config = {
+    layout: BaseLayout,
+};
+
+# Global Script Injector
+
+While the `<scripts-injector>` custom element provides a powerful declarative approach to lazy-loading scripts by encapsulating logic within a Web Component, there are scenarios where a non-web-component solution is preferable to maintain a cleaner DOM structure or to aggregate script loading rules globally.
+
+To accommodate these use cases, we provide the **Global Script Injector**.
+
+<div class="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 px-5 py-4 my-6">
+  <p class="m-0 text-sm font-bold text-blue-900 dark:text-blue-100">
+    <strong>Need a more straightforward approach?</strong>
+  </p>
+  <p class="m-0 mt-1 text-sm text-blue-800 dark:text-blue-200">
+    Use the Web Component with `scripts-injector` and declarative triggers.
+    <a href="/docs" class="ml-1 font-semibold text-blue-700 dark:text-blue-300 no-underline hover:underline">Read the main docs →</a>
+  </p>
+</div>
+
+<br />
+
+## What is it?
+
+The Global Script Injector utilizes a centralized JSON configuration (`<script type="ecopages/global-injector-map">`) and plain HTML `data-eco-trigger` attributes. It leverages the exact same robust interaction-tracking and intersection-observer logic as the `<scripts-injector>`, but completely decoupled from custom elements.
+
+<br />
+
+## Configuration
+
+Define a single global JSON map that associates arbitrary "trigger IDs" with their respective loading conditions (`on:idle`, `on:interaction`, `on:visible`) and target scripts:
+
+```html
+<script type="ecopages/global-injector-map">
+{
+  "analytics-trigger": {
+    "on:idle": { 
+      "scripts": ["/_assets/tracker.js"] 
+    }
+  },
+  "complex-ui-loader": {
+    "on:interaction": {
+      "value": "mouseenter,focusin",
+      "scripts": ["/_assets/heavy-ui.js"]
+    },
+    "on:visible": {
+      "value": "200px",
+      "scripts": ["/_assets/lazy-image.js"]
+    }
+  }
+}
+</script>
+```
+
+<br />
+
+## HTML Attributes
+
+Any standard HTML element can opt into these triggers by referencing the keys from the global map using a `data-eco-trigger` attribute. This keeps your component structure pristine without deeply nesting wrapper elements.
+
+```html
+<!-- Loads analytics.js on idle as defined in the global map -->
+<div class="page-wrapper" data-eco-trigger="analytics-trigger">...</div>
+
+<!-- Loads heavy-ui.js on hover and lazy-image.js when visible -->
+<button data-eco-trigger="complex-ui-loader">Load Complex UI</button>
+```
+
+<br />
+
+## Initialization
+
+Unlike the Web Component which autoregisters, the Global Injector must be explicitly initialized. Provide this in your main entrypoint or layout component:
+
+```typescript
+import { initGlobalInjector } from '@ecopages/scripts-injector/global';
+
+// Initialize the global tracker
+initGlobalInjector();
+```
+
+Behind the scenes, `initGlobalInjector` will:
+1. Parse your `<script type="ecopages/global-injector-map">` blocks.
+2. Query the DOM for any `[data-eco-trigger]` elements.
+3. Observe the DOM for any newly added elements via a `MutationObserver`.
+4. Bind `on:idle`, `IntersectionObserver` (`on:visible`), and DOM event listeners (`on:interaction`) exactly like the Web Component does.
+
+<br />
+
+## Compatibility & Deduplication
+
+The Global Injector shares the same network state registry (`scriptsInFlight`) as the standard `<scripts-injector>`. They can be used side-by-side seamlessly. 
+
+If `<scripts-injector>` and `initGlobalInjector()` both try to lazy-load the identical script URL at the exact same moment, the network request is deduplicated to ensure the browser only fetches the JavaScript file once.
