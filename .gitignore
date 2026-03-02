@@ -176,3 +176,8 @@ dist
 
 # test
 test-results
+
+# scripts-injector generated entry artifacts
+packages/scripts-injector/scripts-injector.js
+packages/scripts-injector/global-injector.js
+packages/scripts-injector/utils.js

@@ -1,63 +1,5 @@
-import type { Conditions, OnDataLoadedEvent, ScriptInjectorProps } from './types';
-
-/**
- * Static set tracking scripts currently being loaded across all instances.
- * Prevents race conditions when multiple injectors try to load the same script simultaneously.
- *
- * @remarks
- * Scripts are added to this set before loading begins and removed in a `finally` block
- * after `Promise.allSettled` completes, ensuring cleanup occurs even if an error is thrown
- * during result processing. This prevents memory leaks where script URLs could otherwise
- * remain in the set indefinitely, blocking future load attempts.
- */
-const scriptsInFlight = new Set<string>();
-
-/**
- * Mouse event types that require MouseEvent constructor for proper replay.
- */
-const MOUSE_EVENTS = new Set([
-	'click',
-	'dblclick',
-	'mousedown',
-	'mouseup',
-	'mouseenter',
-	'mouseleave',
-	'mousemove',
-	'mouseover',
-	'mouseout',
-]);
-
-/**
- * Keyboard event types that require KeyboardEvent constructor for proper replay.
- */
-const KEYBOARD_EVENTS = new Set(['keydown', 'keypress', 'keyup']);
-
-/**
- * Focus event types that require FocusEvent constructor for proper replay.
- */
-const FOCUS_EVENTS = new Set(['focus', 'blur', 'focusin', 'focusout']);
-
-/**
- * Touch event types that require TouchEvent constructor for proper replay.
- */
-const TOUCH_EVENTS = new Set(['touchstart', 'touchend', 'touchmove', 'touchcancel']);
-
-/**
- * Events dispatched by the ScriptsInjector custom element.
- *
- * @remarks
- * These events enable coordination between multiple ScriptsInjector instances
- * on the same page to avoid loading the same script multiple times.
- */
-export enum ScriptInjectorEvents {
-	/**
-	 * Dispatched when scripts have been loaded, notifying other injectors
-	 * to remove these scripts from their pending load list.
-	 *
-	 * @eventProperty detail.loadedScripts - Array of script URLs that were loaded
-	 */
-	DATA_LOADED = 'data-loaded',
-}
+import type { Conditions, InjectorMapConfig, OnDataLoadedEvent } from './types';
+import { cloneEvent, isScriptLoaded, loadScript, ScriptInjectorEvents, scriptsInFlight } from './utils';
 
 /**
  * The available loading condition types for the scripts-injector element.
@@ -100,14 +42,14 @@ export const conditions = ['on:visible', 'on:idle', 'on:interaction'] as const;
  */
 export class ScriptsInjector extends HTMLElement {
 	/**
-	 * The IntersectionObserver instance used for visibility-based loading.
-	 * Only created when `on:visible` attribute is present.
+	 * Array of IntersectionObserver instances used for visibility-based loading.
+	 * Multiple observers may exist when using the injector map with multiple `on:visible` triggers.
 	 */
-	private intersectionObserver?: IntersectionObserver | null = null;
+	private intersectionObservers: IntersectionObserver[] = [];
 
 	/**
 	 * Array of script URLs pending to be loaded.
-	 * Populated from the `scripts` attribute on connect.
+	 * Populated from the `scripts` attribute or the injector map on connect.
 	 */
 	private scriptsToLoad: string[] = [];
 
@@ -122,6 +64,12 @@ export class ScriptsInjector extends HTMLElement {
 	 * Used primarily for `on:interaction` event handlers.
 	 */
 	private registeredEvents: { type: string; listener: EventListener }[] = [];
+
+	/**
+	 * The parsed injector map configuration, if present.
+	 * When set, the component uses map-based conditions instead of attribute-based ones.
+	 */
+	private configMap: InjectorMapConfig | null = null;
 
 	/**
 	 * Map of condition names to their handler methods.
@@ -143,10 +91,69 @@ export class ScriptsInjector extends HTMLElement {
 	 * Called when the element is connected to the DOM.
 	 *
 	 * @remarks
-	 * Parses the `scripts` attribute, registers the global data-loaded listener,
-	 * and applies any loading conditions specified via `on:*` attributes.
+	 * Delegates to `initFromMap` when an `ecopages/injector-map` script child
+	 * is present, otherwise falls back to `initFromAttributes` for the
+	 * traditional attribute-based configuration.
 	 */
 	connectedCallback(): void {
+		const mapScriptContent = this.getMapScriptContent();
+
+		if (mapScriptContent !== null) {
+			this.initFromMap(mapScriptContent);
+		} else if (this.hasAttribute('scripts')) {
+			this.initFromAttributes();
+		}
+
+		document.addEventListener(ScriptInjectorEvents.DATA_LOADED, this.listenToDataLoaded);
+
+		if (this.configMap) {
+			this.applyMapConditions();
+		} else {
+			this.applyConditions();
+		}
+	}
+
+	/**
+	 * Finds the nearest injector-map script and returns its raw text content.
+	 * Falls back to manual script iteration for robustness across selector/parser edge cases.
+	 */
+	private getMapScriptContent(): string | null {
+		const directMatch = this.querySelector('script[type="ecopages/injector-map"]');
+		if (directMatch) {
+			return directMatch.textContent ?? '';
+		}
+
+		for (const script of this.querySelectorAll('script')) {
+			if (script.getAttribute('type') === 'ecopages/injector-map') {
+				return script.textContent ?? '';
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Initializes the component from a JSON injector map configuration.
+	 */
+	private initFromMap(jsonContent: string): void {
+		try {
+			this.configMap = JSON.parse(jsonContent);
+			const allScripts = new Set<string>();
+			for (const key in this.configMap) {
+				for (const script of this.configMap[key].scripts || []) {
+					allScripts.add(script);
+				}
+			}
+			this.scriptsToLoad = Array.from(allScripts);
+		} catch (e) {
+			console.error('[scripts-injector] Failed to parse injector-map JSON', e);
+		}
+	}
+
+	/**
+	 * Initializes the component from traditional HTML attributes.
+	 */
+	private initFromAttributes(): void {
 		const scriptsAttr = this.getAttribute('scripts');
 		this.scriptsToLoad = scriptsAttr
 			? scriptsAttr
@@ -154,25 +161,14 @@ export class ScriptsInjector extends HTMLElement {
 					.map((s) => s.trim())
 					.filter(Boolean)
 			: [];
-
-		document.addEventListener(ScriptInjectorEvents.DATA_LOADED, this.listenToDataLoaded);
-		this.applyConditions();
 	}
 
 	/**
 	 * Called when the element is disconnected from the DOM.
-	 *
-	 * @remarks
-	 * Performs cleanup by removing event listeners and disconnecting observers.
-	 * Also removes the global data-loaded listener to prevent memory leaks.
 	 */
 	disconnectedCallback(): void {
 		document.removeEventListener(ScriptInjectorEvents.DATA_LOADED, this.listenToDataLoaded);
 		this.unregisterEvents();
-		if (this.intersectionObserver) {
-			this.intersectionObserver.disconnect();
-			this.intersectionObserver = null;
-		}
 	}
 
 	/**
@@ -183,11 +179,11 @@ export class ScriptsInjector extends HTMLElement {
 	 * scripts from their pending load list, preventing duplicate loading.
 	 * Also includes any failed scripts so other injectors can handle them appropriately.
 	 */
-	private notifyInjectors(): void {
+	private notifyInjectors(loadedScripts?: string[]): void {
 		document.dispatchEvent(
 			new CustomEvent(ScriptInjectorEvents.DATA_LOADED, {
 				detail: {
-					loadedScripts: this.scriptsToLoad,
+					loadedScripts: loadedScripts || this.scriptsToLoad,
 					failedScripts: this.failedScripts,
 				},
 			}),
@@ -211,11 +207,30 @@ export class ScriptsInjector extends HTMLElement {
 	}
 
 	/**
+	 * Parses the interior configuration map to determine which conditions
+	 * to listen for, isolating the specific scripts for each trigger.
+	 */
+	private applyMapConditions(): void {
+		if (!this.configMap) return;
+		for (const triggerKey in this.configMap) {
+			if (triggerKey.startsWith('on:idle')) {
+				this.onIdle(this.configMap[triggerKey].scripts);
+			} else if (triggerKey.startsWith('on:interaction')) {
+				const eventsStr = this.configMap[triggerKey].value as string;
+				this.onInteraction(eventsStr, this.configMap[triggerKey].scripts);
+			} else if (triggerKey.startsWith('on:visible')) {
+				const margin = this.configMap[triggerKey].value as string | undefined;
+				this.onVisible(margin, this.configMap[triggerKey].scripts);
+			}
+		}
+	}
+
+	/**
 	 * Handler for the `on:visible` condition.
 	 * Sets up an IntersectionObserver to load scripts when the element enters the viewport.
 	 */
-	private onVisible(): void {
-		this.setupIntersectionObserver();
+	private onVisible(marginOverride?: string, specificScripts?: string[]): void {
+		this.setupIntersectionObserver(marginOverride, specificScripts);
 	}
 
 	/**
@@ -224,8 +239,8 @@ export class ScriptsInjector extends HTMLElement {
 	 * Uses queueMicrotask to defer execution until after the current synchronous code completes,
 	 * ensuring the element is fully connected before loading scripts.
 	 */
-	private onIdle(): void {
-		queueMicrotask(() => this.loadScripts('idle'));
+	private onIdle(specificScripts?: string[]): void {
+		queueMicrotask(() => this.loadScripts('idle', specificScripts));
 	}
 
 	/**
@@ -237,16 +252,15 @@ export class ScriptsInjector extends HTMLElement {
 	 * (e.g., "mouseenter,focusin"). Scripts load on the first matching event.
 	 * Event listeners are stored as references to enable proper cleanup.
 	 */
-	private onInteraction(): void {
-		const interaction = this.getAttribute('on:interaction') as ScriptInjectorProps['on:interaction'];
-
+	private onInteraction(interactionOverride?: string, specificScripts?: string[]): void {
+		const interaction = interactionOverride || (this.getAttribute('on:interaction') as string);
 		if (!interaction) return;
 
 		for (const event of interaction.split(',')) {
 			const eventType = event.trim();
 			if (eventType) {
 				const listener = async (e: Event) => {
-					await this.handleInteraction(e);
+					await this.handleInteraction(e, specificScripts);
 				};
 
 				this.addEventListener(eventType, listener);
@@ -271,11 +285,11 @@ export class ScriptsInjector extends HTMLElement {
 	 * default behaviors (like navigation or form submission) are triggered.
 	 * For other events, clones and dispatches a new event with all properties.
 	 */
-	private async handleInteraction(event: Event): Promise<void> {
+	private async handleInteraction(event: Event, specificScripts?: string[]): Promise<void> {
 		event.stopImmediatePropagation();
 		event.preventDefault();
 
-		await this.loadScripts(`interaction:${event.type}`);
+		await this.loadScripts(`interaction:${event.type}`, specificScripts);
 
 		if (event.target === this) return;
 
@@ -284,89 +298,10 @@ export class ScriptsInjector extends HTMLElement {
 			return;
 		}
 
-		const clonedEvent = this.cloneEvent(event);
+		const clonedEvent = cloneEvent(event);
 		if (clonedEvent) {
 			event.target?.dispatchEvent(clonedEvent);
 		}
-	}
-
-	/**
-	 * Creates a clone of an event with all its original properties preserved.
-	 *
-	 * @param event - The original event to clone
-	 * @returns A new event of the appropriate type with all properties copied
-	 *
-	 * @remarks
-	 * Uses the correct event constructor (MouseEvent, KeyboardEvent, FocusEvent, TouchEvent)
-	 * based on the event type to ensure all relevant properties are preserved.
-	 * Falls back to a generic Event for unsupported event types.
-	 *
-	 * Supported types:
-	 * - Mouse events preserve coordinates, buttons, and modifier keys
-	 * - Keyboard events preserve key codes, location, and modifier keys
-	 * - Focus events preserve relatedTarget
-	 * - Touch events preserve touch lists and modifier keys
-	 */
-	private cloneEvent(event: Event): Event {
-		const baseInit: EventInit = {
-			bubbles: event.bubbles,
-			cancelable: event.cancelable,
-			composed: event.composed,
-		};
-
-		if (MOUSE_EVENTS.has(event.type) && event instanceof MouseEvent) {
-			return new MouseEvent(event.type, {
-				...baseInit,
-				screenX: event.screenX,
-				screenY: event.screenY,
-				clientX: event.clientX,
-				clientY: event.clientY,
-				button: event.button,
-				buttons: event.buttons,
-				ctrlKey: event.ctrlKey,
-				shiftKey: event.shiftKey,
-				altKey: event.altKey,
-				metaKey: event.metaKey,
-				relatedTarget: event.relatedTarget,
-			});
-		}
-
-		if (KEYBOARD_EVENTS.has(event.type) && event instanceof KeyboardEvent) {
-			return new KeyboardEvent(event.type, {
-				...baseInit,
-				key: event.key,
-				code: event.code,
-				location: event.location,
-				repeat: event.repeat,
-				isComposing: event.isComposing,
-				ctrlKey: event.ctrlKey,
-				shiftKey: event.shiftKey,
-				altKey: event.altKey,
-				metaKey: event.metaKey,
-			});
-		}
-
-		if (FOCUS_EVENTS.has(event.type) && event instanceof FocusEvent) {
-			return new FocusEvent(event.type, {
-				...baseInit,
-				relatedTarget: event.relatedTarget,
-			});
-		}
-
-		if (TOUCH_EVENTS.has(event.type) && event instanceof TouchEvent) {
-			return new TouchEvent(event.type, {
-				...baseInit,
-				touches: Array.from(event.touches),
-				targetTouches: Array.from(event.targetTouches),
-				changedTouches: Array.from(event.changedTouches),
-				ctrlKey: event.ctrlKey,
-				shiftKey: event.shiftKey,
-				altKey: event.altKey,
-				metaKey: event.metaKey,
-			});
-		}
-
-		return new Event(event.type, baseInit);
 	}
 
 	/**
@@ -397,7 +332,10 @@ export class ScriptsInjector extends HTMLElement {
 	 * by other injectors to clean up resources.
 	 */
 	private unregisterEvents(): void {
-		this.intersectionObserver?.disconnect();
+		for (const observer of this.intersectionObservers) {
+			observer.disconnect();
+		}
+		this.intersectionObservers = [];
 
 		for (const { type, listener } of this.registeredEvents) {
 			this.removeEventListener(type, listener);
@@ -420,16 +358,17 @@ export class ScriptsInjector extends HTMLElement {
 	 * Checks both if the script already exists and if it's currently being loaded
 	 * to prevent duplicate loading across multiple injectors.
 	 */
-	private async loadScripts(reason: string = 'unknown'): Promise<void> {
+	private async loadScripts(reason: string = 'unknown', specificScripts?: string[]): Promise<void> {
 		if (this.hasAttribute('data-loaded')) return;
 
 		this.failedScripts = [];
 		const loadResults: { script: string; promise: Promise<void> }[] = [];
+		const targetScripts = specificScripts || this.scriptsToLoad;
 
-		for (const script of this.scriptsToLoad) {
-			if (!this.isScriptLoaded(script) && !scriptsInFlight.has(script)) {
+		for (const script of targetScripts) {
+			if (!isScriptLoaded(script) && !scriptsInFlight.has(script)) {
 				scriptsInFlight.add(script);
-				loadResults.push({ script, promise: this.loadScript(script) });
+				loadResults.push({ script, promise: loadScript(script) });
 			}
 		}
 
@@ -448,60 +387,23 @@ export class ScriptsInjector extends HTMLElement {
 			}
 		}
 
-		this.setAttribute('data-loaded', '');
 		this.setAttribute('data-load-reason', reason);
 
 		if (this.failedScripts.length > 0) {
-			this.setAttribute('data-error', this.failedScripts.join(','));
+			const currentError = this.getAttribute('data-error');
+			const newErrors = currentError
+				? `${currentError},${this.failedScripts.join(',')}`
+				: this.failedScripts.join(',');
+			this.setAttribute('data-error', newErrors);
 		}
 
-		this.unregisterEvents();
-		this.notifyInjectors();
-	}
+		const allLoaded = this.scriptsToLoad.every((s) => isScriptLoaded(s));
+		if (allLoaded) {
+			this.setAttribute('data-loaded', '');
+			this.unregisterEvents();
+		}
 
-	/**
-	 * Checks if a script with the given URL already exists in the document.
-	 *
-	 * @param scriptUrl - The script URL to check
-	 * @returns `true` if a script with this src already exists, `false` otherwise
-	 */
-	private isScriptLoaded(scriptUrl: string): boolean {
-		return document.querySelector(`script[src="${scriptUrl}"]`) !== null;
-	}
-
-	/**
-	 * Creates and appends a script element for the given URL.
-	 *
-	 * @param scriptToLoad - The URL of the script to load
-	 * @returns Promise that resolves when the script is loaded
-	 *
-	 * @remarks
-	 * Scripts are loaded as ES modules (`type="module"`) with async loading enabled.
-	 * Error handling is provided via the script's onerror event.
-	 *
-	 * Includes a double-check before appending to prevent race conditions
-	 * if another injector loaded the script during the async wait.
-	 */
-	private loadScript(scriptToLoad: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			if (this.isScriptLoaded(scriptToLoad)) {
-				resolve();
-				return;
-			}
-
-			const script = document.createElement('script');
-			script.src = scriptToLoad;
-			script.type = 'module';
-			script.async = true;
-
-			script.onload = () => resolve();
-			script.onerror = (error) => {
-				console.error(`[scripts-injector] Failed to load script: ${scriptToLoad}`, error);
-				reject(error);
-			};
-
-			document.head.appendChild(script);
-		});
+		this.notifyInjectors(targetScripts);
 	}
 
 	/**
@@ -514,24 +416,30 @@ export class ScriptsInjector extends HTMLElement {
 	 * The `on:visible` attribute value can optionally specify a custom root margin
 	 * (e.g., `on:visible="100px 0px"`), otherwise the default is used.
 	 */
-	private setupIntersectionObserver(): void {
+	private setupIntersectionObserver(marginOverride?: string, specificScripts?: string[]): void {
 		const visibleAttr = this.getAttribute('on:visible');
-		const rootMargin = visibleAttr && visibleAttr !== '' && visibleAttr !== 'true' ? visibleAttr : '50px 0px';
+		const rootMargin =
+			marginOverride !== undefined
+				? marginOverride
+				: visibleAttr && visibleAttr !== '' && visibleAttr !== 'true'
+					? visibleAttr
+					: '50px 0px';
 
 		const options: IntersectionObserverInit = {
 			rootMargin,
 			threshold: 0.1,
 		};
 
-		this.intersectionObserver = new IntersectionObserver((entries) => {
+		const observer = new IntersectionObserver((entries) => {
 			for (const entry of entries) {
 				if (entry.isIntersecting) {
-					this.loadScripts('visible');
+					this.loadScripts('visible', specificScripts);
 				}
 			}
 		}, options);
 
-		this.intersectionObserver.observe(this);
+		observer.observe(this);
+		this.intersectionObservers.push(observer);
 	}
 }
 

@@ -1,5 +1,6 @@
 import type { ScriptsInjector } from './scripts-injector';
-import { ScriptInjectorEvents, type conditions } from './scripts-injector';
+import { type conditions } from './scripts-injector';
+import { ScriptInjectorEvents } from './utils';
 
 export type OnDataLoadedEvent = CustomEvent<{
 	/** Array of script URLs that were successfully loaded or already existed */
@@ -9,6 +10,15 @@ export type OnDataLoadedEvent = CustomEvent<{
 }>;
 
 export type Conditions = (typeof conditions)[number];
+
+export type TriggerSpecificConfig = {
+	value?: string | boolean;
+	scripts: string[];
+};
+
+export type InjectorMapConfig = Record<string, TriggerSpecificConfig>;
+
+export type GlobalInjectorMapConfig = Record<string, InjectorMapConfig>;
 
 declare global {
 	interface HTMLElementTagNameMap {

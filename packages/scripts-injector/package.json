@@ -1,6 +1,6 @@
 {
 	"name": "@ecopages/scripts-injector",
-	"main": "scripts-injector.js",
+	"main": "dist/scripts-injector.js",
 	"version": "0.1.3",
 	"type": "module",
 	"types": "types.d.ts",
@@ -13,17 +13,23 @@
 			"import": "./package.json"
 		},
 		".": {
-			"import": "./scripts-injector.js",
-			"require": "./scripts-injector.js"
+			"import": "./dist/scripts-injector.js",
+			"require": "./dist/scripts-injector.js"
+		},
+		"./global": {
+			"import": "./dist/global-injector.js",
+			"require": "./dist/global-injector.js"
 		},
 		"./types": "./types.d.ts"
 	},
 	"scripts": {
-		"build:lib": "rm -rf dist && bun build --entry scripts-injector.ts --outdir . --minify",
+		"build:lib": "rm -rf dist && bun build --entry scripts-injector.ts --entry global-injector.ts --outdir dist --minify",
+		"prepack": "bun run build:lib",
 		"test": "vitest",
 		"test:run": "vitest run"
 	},
 	"devDependencies": {
+		"@testing-library/dom": "^10.4.1",
 		"@types/bun": "latest",
 		"@vitest/browser-playwright": "^4.0.16",
 		"vitest": "^4.0.16"
@@ -32,7 +38,7 @@
 		"typescript": "^5.0.0"
 	},
 	"files": [
-		"scripts-injector.js",
+		"dist",
 		"/types.d.ts"
 	]
 }
