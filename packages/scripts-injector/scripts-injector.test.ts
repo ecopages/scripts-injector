@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ScriptsInjector, ScriptInjectorEvents } from './scripts-injector';
+import { waitFor } from '@testing-library/dom';
+import { ScriptsInjector } from './scripts-injector.ts';
+import { ScriptInjectorEvents } from './utils';
 
 describe('ScriptsInjector', () => {
 	let container: HTMLDivElement;
@@ -12,6 +14,7 @@ describe('ScriptsInjector', () => {
 	afterEach(() => {
 		container.remove();
 		document.querySelectorAll('script[src^="/test-"]').forEach((el) => el.remove());
+		document.querySelectorAll('script[src^="/map-"]').forEach((el) => el.remove());
 		vi.restoreAllMocks();
 	});
 
@@ -58,10 +61,10 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50)); // Wait for idle callback
-
-			const scripts = document.querySelectorAll('script[src="/test-a.js"], script[src="/test-b.js"]');
-			expect(scripts.length).toBe(2);
+			await waitFor(() => {
+				const scripts = document.querySelectorAll('script[src="/test-a.js"], script[src="/test-b.js"]');
+				expect(scripts.length).toBe(2);
+			});
 		});
 	});
 
@@ -96,11 +99,11 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50)); // Wait for idle callback
-
-			const script = document.querySelector('script[src="/test-idle.js"]');
-			expect(script).not.toBeNull();
-			expect(script?.getAttribute('type')).toBe('module');
+			await waitFor(() => {
+				const script = document.querySelector('script[src="/test-idle.js"]');
+				expect(script).not.toBeNull();
+				expect(script?.getAttribute('type')).toBe('module');
+			});
 		});
 
 		it('should set data-loaded attribute after loading', async () => {
@@ -109,9 +112,9 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50)); // Wait for idle callback
-
-			expect(el.hasAttribute('data-loaded')).toBe(true);
+			await waitFor(() => {
+				expect(el.hasAttribute('data-loaded')).toBe(true);
+			});
 		});
 
 		it('should load multiple scripts', async () => {
@@ -120,11 +123,11 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50)); // Wait for idle callback
-
-			expect(document.querySelector('script[src="/test-multi-1.js"]')).not.toBeNull();
-			expect(document.querySelector('script[src="/test-multi-2.js"]')).not.toBeNull();
-			expect(document.querySelector('script[src="/test-multi-3.js"]')).not.toBeNull();
+			await waitFor(() => {
+				expect(document.querySelector('script[src="/test-multi-1.js"]')).not.toBeNull();
+				expect(document.querySelector('script[src="/test-multi-2.js"]')).not.toBeNull();
+				expect(document.querySelector('script[src="/test-multi-3.js"]')).not.toBeNull();
+			});
 		});
 	});
 
@@ -138,9 +141,10 @@ describe('ScriptsInjector', () => {
 			expect(document.querySelector('script[src="/test-interaction.js"]')).toBeNull();
 
 			el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-			await new Promise((r) => setTimeout(r, 50)); // Wait for async load
 
-			expect(document.querySelector('script[src="/test-interaction.js"]')).not.toBeNull();
+			await waitFor(() => {
+				expect(document.querySelector('script[src="/test-interaction.js"]')).not.toBeNull();
+			});
 		});
 
 		it('should remove event listeners after loading', async () => {
@@ -152,9 +156,10 @@ describe('ScriptsInjector', () => {
 			container.appendChild(el);
 
 			el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-			await new Promise((r) => setTimeout(r, 50)); // Wait for async load
 
-			expect(removeEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+			await waitFor(() => {
+				expect(removeEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+			});
 		});
 
 		it('should handle empty interaction attribute gracefully', () => {
@@ -177,9 +182,9 @@ describe('ScriptsInjector', () => {
 			el.style.height = '100px';
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 100));
-
-			expect(el.hasAttribute('data-loaded')).toBe(true);
+			await waitFor(() => {
+				expect(el.hasAttribute('data-loaded')).toBe(true);
+			});
 		});
 
 		it('should respect on:visible attribute value as rootMargin', () => {
@@ -202,9 +207,9 @@ describe('ScriptsInjector', () => {
 			el.style.height = '100px';
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 100));
-
-			expect(document.querySelector('script[src="/test-visible-load.js"]')).not.toBeNull();
+			await waitFor(() => {
+				expect(document.querySelector('script[src="/test-visible-load.js"]')).not.toBeNull();
+			});
 		});
 	});
 
@@ -215,10 +220,11 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
-
-			const script = document.querySelector('script[src="/test-module.js"]') as HTMLScriptElement;
-			expect(script.type).toBe('module');
+			await waitFor(() => {
+				const script = document.querySelector('script[src="/test-module.js"]') as HTMLScriptElement;
+				expect(script).not.toBeNull();
+				expect(script.type).toBe('module');
+			});
 		});
 
 		it('should set async attribute on scripts', async () => {
@@ -227,10 +233,11 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
-
-			const script = document.querySelector('script[src="/test-async.js"]') as HTMLScriptElement;
-			expect(script.async).toBe(true);
+			await waitFor(() => {
+				const script = document.querySelector('script[src="/test-async.js"]') as HTMLScriptElement;
+				expect(script).not.toBeNull();
+				expect(script.async).toBe(true);
+			});
 		});
 
 		it('should not load duplicate scripts', async () => {
@@ -243,10 +250,10 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
-
-			const scripts = document.querySelectorAll('script[src="/test-duplicate.js"]');
-			expect(scripts.length).toBe(1);
+			await waitFor(() => {
+				const scripts = document.querySelectorAll('script[src="/test-duplicate.js"]');
+				expect(scripts.length).toBe(1);
+			});
 
 			existingScript.remove();
 		});
@@ -257,10 +264,10 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
-
-			const script = document.head.querySelector('script[src="/test-head.js"]');
-			expect(script).not.toBeNull();
+			await waitFor(() => {
+				const script = document.head.querySelector('script[src="/test-head.js"]');
+				expect(script).not.toBeNull();
+			});
 		});
 
 		it('should not load scripts if already loaded (data-loaded attribute present)', () => {
@@ -284,11 +291,14 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
+			await waitFor(() => {
+				expect(el.hasAttribute('data-loaded')).toBe(true);
+			});
 
-			expect(eventHandler).toHaveBeenCalled();
-			const event = eventHandler.mock.calls[0][0] as CustomEvent;
-			expect(event.detail.loadedScripts).toContain('/test-event.js');
+			const matchingCall = eventHandler.mock.calls.find((call) =>
+				(call[0] as CustomEvent).detail.loadedScripts.includes('/test-event.js'),
+			);
+			expect(matchingCall).toBeDefined();
 
 			document.removeEventListener(ScriptInjectorEvents.DATA_LOADED, eventHandler);
 		});
@@ -305,15 +315,17 @@ describe('ScriptsInjector', () => {
 			container.appendChild(el2);
 			container.appendChild(el1); // el1 loads first via idle
 
-			await new Promise((r) => setTimeout(r, 50)); // Wait for el1 to load and fire event
+			await waitFor(() => {
+				expect(document.querySelector('script[src="/test-shared.js"]')).not.toBeNull();
+			});
 
-			el2.dispatchEvent(new MouseEvent('click', { bubbles: true })); // Trigger el2
+			el2.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-			await new Promise((r) => setTimeout(r, 50)); // Wait for el2 to process
-
-			const sharedScripts = document.querySelectorAll('script[src="/test-shared.js"]');
-			expect(sharedScripts.length).toBe(1);
-			expect(document.querySelector('script[src="/test-unique.js"]')).not.toBeNull();
+			await waitFor(() => {
+				const sharedScripts = document.querySelectorAll('script[src="/test-shared.js"]');
+				expect(sharedScripts.length).toBe(1);
+				expect(document.querySelector('script[src="/test-unique.js"]')).not.toBeNull();
+			});
 		});
 
 		it('should set data-loaded when all scripts are loaded by other injectors', async () => {
@@ -327,10 +339,10 @@ describe('ScriptsInjector', () => {
 			el2.setAttribute('on:idle', '');
 			container.appendChild(el2); // el2 loads via idle, should notify el1
 
-			await new Promise((r) => setTimeout(r, 50));
-
-			expect(el1.hasAttribute('data-loaded')).toBe(true);
-			expect(el2.hasAttribute('data-loaded')).toBe(true);
+			await waitFor(() => {
+				expect(el1.hasAttribute('data-loaded')).toBe(true);
+				expect(el2.hasAttribute('data-loaded')).toBe(true);
+			});
 		});
 	});
 
@@ -345,9 +357,9 @@ describe('ScriptsInjector', () => {
 			el.style.height = '100px';
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 100));
-
-			expect(document.querySelector('script[src="/test-multi-condition.js"]')).not.toBeNull();
+			await waitFor(() => {
+				expect(document.querySelector('script[src="/test-multi-condition.js"]')).not.toBeNull();
+			});
 		});
 	});
 
@@ -360,7 +372,10 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
+			await waitFor(() => {
+				const script = document.querySelector('script[src="/test-error.js"]') as HTMLScriptElement;
+				expect(script).not.toBeNull();
+			});
 
 			const script = document.querySelector('script[src="/test-error.js"]') as HTMLScriptElement;
 			script.onerror?.(new Event('error'));
@@ -379,16 +394,17 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
+			await waitFor(() => {
+				const script = document.querySelector('script[src="/test-partial-error.js"]') as HTMLScriptElement;
+				expect(script).not.toBeNull();
+			});
 
-			// Simulate failure manually since we can't easily trigger real network error in DOM env
 			const script = document.querySelector('script[src="/test-partial-error.js"]') as HTMLScriptElement;
 			script.onerror?.(new Event('error'));
 
-			// The component waits for all promises to settle, so we wait again
-			await new Promise((r) => setTimeout(r, 50));
-
-			expect(el.hasAttribute('data-loaded')).toBe(true);
+			await waitFor(() => {
+				expect(el.hasAttribute('data-loaded')).toBe(true);
+			});
 		});
 	});
 
@@ -399,9 +415,9 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
-
-			expect(el.getAttribute('data-load-reason')).toBe('idle');
+			await waitFor(() => {
+				expect(el.getAttribute('data-load-reason')).toBe('idle');
+			});
 		});
 
 		it('should set data-load-reason="visible" when loaded via on:visible', async () => {
@@ -412,9 +428,9 @@ describe('ScriptsInjector', () => {
 			el.style.height = '100px';
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 100));
-
-			expect(el.getAttribute('data-load-reason')).toBe('visible');
+			await waitFor(() => {
+				expect(el.getAttribute('data-load-reason')).toBe('visible');
+			});
 		});
 
 		it('should set data-load-reason="interaction:click" when loaded via click', async () => {
@@ -424,9 +440,10 @@ describe('ScriptsInjector', () => {
 			container.appendChild(el);
 
 			el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-			await new Promise((r) => setTimeout(r, 50));
 
-			expect(el.getAttribute('data-load-reason')).toBe('interaction:click');
+			await waitFor(() => {
+				expect(el.getAttribute('data-load-reason')).toBe('interaction:click');
+			});
 		});
 
 		it('should set data-load-reason="interaction:mouseenter" when loaded via mouseenter', async () => {
@@ -436,9 +453,10 @@ describe('ScriptsInjector', () => {
 			container.appendChild(el);
 
 			el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-			await new Promise((r) => setTimeout(r, 50));
 
-			expect(el.getAttribute('data-load-reason')).toBe('interaction:mouseenter');
+			await waitFor(() => {
+				expect(el.getAttribute('data-load-reason')).toBe('interaction:mouseenter');
+			});
 		});
 	});
 
@@ -457,7 +475,6 @@ describe('ScriptsInjector', () => {
 				replayedEvents.push(e);
 			});
 
-			// Dispatch original event with specific coordinates
 			const originalEvent = new MouseEvent('mousedown', {
 				bubbles: true,
 				clientX: 150,
@@ -470,10 +487,10 @@ describe('ScriptsInjector', () => {
 			});
 			target.dispatchEvent(originalEvent);
 
-			await new Promise((r) => setTimeout(r, 50));
+			await waitFor(() => {
+				expect(replayedEvents.length).toBeGreaterThan(0);
+			});
 
-			// Should have received a replayed event
-			expect(replayedEvents.length).toBeGreaterThan(0);
 			const replayed = replayedEvents[replayedEvents.length - 1];
 			expect(replayed.clientX).toBe(150);
 			expect(replayed.clientY).toBe(200);
@@ -507,9 +524,10 @@ describe('ScriptsInjector', () => {
 			});
 			target.dispatchEvent(originalEvent);
 
-			await new Promise((r) => setTimeout(r, 50));
+			await waitFor(() => {
+				expect(replayedEvents.length).toBeGreaterThan(0);
+			});
 
-			expect(replayedEvents.length).toBeGreaterThan(0);
 			const replayed = replayedEvents[replayedEvents.length - 1];
 			expect(replayed.key).toBe('Enter');
 			expect(replayed.code).toBe('Enter');
@@ -539,9 +557,10 @@ describe('ScriptsInjector', () => {
 			});
 			target.dispatchEvent(originalEvent);
 
-			await new Promise((r) => setTimeout(r, 50));
+			await waitFor(() => {
+				expect(replayedEvents.length).toBeGreaterThan(0);
+			});
 
-			expect(replayedEvents.length).toBeGreaterThan(0);
 			const replayed = replayedEvents[replayedEvents.length - 1];
 			expect(replayed.relatedTarget).toBe(related);
 		});
@@ -559,10 +578,10 @@ describe('ScriptsInjector', () => {
 			target.addEventListener('click', clickSpy);
 
 			target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-			await new Promise((r) => setTimeout(r, 50));
 
-			// Native click should be called after script loads
-			expect(clickSpy).toHaveBeenCalled();
+			await waitFor(() => {
+				expect(clickSpy).toHaveBeenCalled();
+			});
 		});
 	});
 
@@ -580,14 +599,13 @@ describe('ScriptsInjector', () => {
 			el2.style.width = '100px';
 			el2.style.height = '100px';
 
-			// Append both at the same time to trigger simultaneously
 			container.appendChild(el1);
 			container.appendChild(el2);
 
-			await new Promise((r) => setTimeout(r, 150));
-
-			const scripts = document.querySelectorAll('script[src="/test-race-1.js"]');
-			expect(scripts.length).toBe(1);
+			await waitFor(() => {
+				const scripts = document.querySelectorAll('script[src="/test-race-1.js"]');
+				expect(scripts.length).toBe(1);
+			});
 		});
 
 		it('should handle rapid sequential triggers without duplicates', async () => {
@@ -596,15 +614,14 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:interaction', 'click');
 			container.appendChild(el);
 
-			// Rapid fire clicks
 			el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 			el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 			el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-			await new Promise((r) => setTimeout(r, 100));
-
-			const scripts = document.querySelectorAll('script[src="/test-rapid-trigger.js"]');
-			expect(scripts.length).toBe(1);
+			await waitFor(() => {
+				const scripts = document.querySelectorAll('script[src="/test-rapid-trigger.js"]');
+				expect(scripts.length).toBe(1);
+			});
 		});
 	});
 
@@ -618,15 +635,62 @@ describe('ScriptsInjector', () => {
 			el.setAttribute('on:idle', '');
 			container.appendChild(el);
 
-			await new Promise((r) => setTimeout(r, 50));
-
-			expect(eventHandler).toHaveBeenCalled();
-			const event = eventHandler.mock.calls[0][0] as CustomEvent;
-			expect(event.detail).toHaveProperty('loadedScripts');
-			expect(event.detail).toHaveProperty('failedScripts');
-			expect(Array.isArray(event.detail.failedScripts)).toBe(true);
+			await waitFor(() => {
+				expect(eventHandler).toHaveBeenCalled();
+				const event = eventHandler.mock.calls[0][0] as CustomEvent;
+				expect(event.detail).toHaveProperty('loadedScripts');
+				expect(event.detail).toHaveProperty('failedScripts');
+				expect(Array.isArray(event.detail.failedScripts)).toBe(true);
+			});
 
 			document.removeEventListener(ScriptInjectorEvents.DATA_LOADED, eventHandler);
+		});
+	});
+
+	describe('JSON Map Configuration', () => {
+		it('should parse injector-map script and load idle triggers', async () => {
+			const el = document.createElement('scripts-injector') as ScriptsInjector;
+
+			const mapScript = document.createElement('script');
+			mapScript.type = 'ecopages/injector-map';
+			mapScript.textContent = JSON.stringify({
+				'on:idle': { scripts: ['/map-idle.js'] },
+				'on:interaction': { value: 'click', scripts: ['/map-click.js'] },
+			});
+
+			el.appendChild(mapScript);
+
+			container.appendChild(el);
+
+			await waitFor(() => {
+				expect(document.querySelector('script[src="/map-idle.js"]')).not.toBeNull();
+			});
+
+			expect(document.querySelector('script[src="/map-click.js"]')).toBeNull();
+
+			el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+			await waitFor(() => {
+				expect(document.querySelector('script[src="/map-click.js"]')).not.toBeNull();
+				expect(el.hasAttribute('data-loaded')).toBe(true);
+			});
+		});
+
+		it('should gracefully handle invalid JSON in injector-map', () => {
+			const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+			const el = document.createElement('scripts-injector') as ScriptsInjector;
+			const mapScript = document.createElement('script');
+			mapScript.type = 'ecopages/injector-map';
+			mapScript.textContent = '{ invalid json';
+
+			el.appendChild(mapScript);
+			container.appendChild(el);
+
+			expect(consoleSpy).toHaveBeenCalledWith(
+				'[scripts-injector] Failed to parse injector-map JSON',
+				expect.anything(),
+			);
 		});
 	});
 });
