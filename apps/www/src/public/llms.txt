@@ -1,0 +1,145 @@
+# LLM Instructions for @ecopages/scripts-injector
+
+This file provides model-oriented guidance for generating correct code with this package.
+
+## Package Purpose
+
+`@ecopages/scripts-injector` lazy-loads client scripts based on runtime conditions:
+- idle (`on:idle`)
+- interaction (`on:interaction`)
+- visibility (`on:visible`)
+
+It supports two modes:
+1. Web Component mode with `<scripts-injector>`
+2. Global mode with `initGlobalInjector()` and `data-eco-trigger`
+
+## Installation
+
+```bash
+bun add @ecopages/scripts-injector
+```
+
+## Canonical Imports
+
+```ts
+import '@ecopages/scripts-injector';
+import { initGlobalInjector } from '@ecopages/scripts-injector/global';
+```
+
+Use `@ecopages/scripts-injector/global` for global trigger-map mode only.
+
+## Web Component Mode (Preferred for local component-scoped behavior)
+
+Use the custom element name exactly as:
+
+```html
+<scripts-injector></scripts-injector>
+```
+
+### Valid attributes
+- `scripts`: comma-separated URLs
+- `on:idle`
+- `on:interaction="event1,event2"`
+- `on:visible` or `on:visible="<rootMargin>"`
+
+### Example
+
+```html
+<scripts-injector scripts="/_assets/heavy-ui.js" on:interaction="mouseenter,focusin">
+  <button>Open</button>
+</scripts-injector>
+```
+
+## Global Mode (Preferred for no-wrapper DOM)
+
+1. Add one or more trigger maps:
+
+```html
+<script type="ecopages/global-injector-map">
+{
+  "analytics-trigger": {
+    "on:idle": { "scripts": ["/_assets/tracker.js"] }
+  },
+  "card-trigger": {
+    "on:interaction": {
+      "value": "click",
+      "scripts": ["/_assets/card.js"]
+    }
+  }
+}
+</script>
+```
+
+2. Attach triggers to plain elements:
+
+```html
+<div data-eco-trigger="analytics-trigger"></div>
+<button data-eco-trigger="card-trigger">Open Card</button>
+```
+
+3. Initialize once and keep the handle:
+
+```ts
+const injector = initGlobalInjector();
+```
+
+4. On SPA route/page swaps, call:
+
+```ts
+injector.refresh();
+```
+
+5. On teardown, call:
+
+```ts
+injector.cleanup();
+```
+
+## Runtime Guarantees to Preserve in Generated Code
+
+- Do not rename the element to `<script-injector>`; correct tag is `<scripts-injector>`.
+- Reuse script URLs; duplicate script injection is prevented.
+- Keep `data-eco-trigger` values aligned with keys in `ecopages/global-injector-map`.
+- Do not hardcode framework-specific events for global mode; call `refresh()` from framework lifecycle hooks instead.
+
+## Events and Attributes
+
+The package dispatches a `data-loaded` custom event (`ScriptInjectorEvents.DATA_LOADED`) with detail:
+- `loadedScripts: string[]`
+- `failedScripts: string[]`
+
+Elements may receive:
+- `data-loaded`
+- `data-load-reason` (`idle`, `visible`, or `interaction:<event>`)
+- `data-loaded-scripts`
+- `data-error` (comma-separated failed URLs, when failures occur)
+
+## Common Mistakes to Avoid
+
+- Using outdated global API patterns that rely on framework-specific events.
+- Calling `injector.cleanup()` immediately after initialization in examples.
+- Omitting `scripts` or passing non-string values in markup attributes.
+- Forgetting commas in `on:interaction` event lists.
+
+## Minimal Correct Snippets
+
+### Idle load
+
+```html
+<scripts-injector scripts="/_assets/analytics.js" on:idle></scripts-injector>
+```
+
+### Interaction load
+
+```html
+<scripts-injector scripts="/_assets/dialog.js" on:interaction="click,mouseenter">
+  <button>Open Dialog</button>
+</scripts-injector>
+```
+
+### Global refresh integration (pseudo-framework)
+
+```ts
+const injector = initGlobalInjector();
+router.onAfterNavigate(() => injector.refresh());
+```

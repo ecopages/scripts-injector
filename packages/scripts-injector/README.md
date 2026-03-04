@@ -77,20 +77,32 @@ To use the Scripts Injector, you need to include it in your HTML:
 ```ts
 import { initGlobalInjector } from '@ecopages/scripts-injector/global';
 
-initGlobalInjector();
+const injector = initGlobalInjector();
+
+// Call after SPA route changes / page swaps when new trigger-map tags or
+// new [data-eco-trigger] elements are inserted by your framework.
+injector.refresh();
+
+// Call during app teardown if needed.
+injector.cleanup();
 ```
+
+`initGlobalInjector()` returns a handle with:
+
+- `refresh()` — re-parse all global maps and bind any unbound elements with `data-eco-trigger`
+- `cleanup()` — disconnect observers and disable further refresh work for that instance
 
 ## Props
 
-The ScriptInjectorProps type defines the properties that can be used to control the behavior of the script-injector custom element. Here are the available properties:
+The ScriptInjectorProps type defines the properties that can be used to control the behavior of the scripts-injector custom element. Here are the available properties:
 
-`"on:idle"`: This optional boolean property determines whether the script should be loaded once the DOM is ready. For example, `<script-injector on:idle></script-injector>` will load the script as soon as the DOM is ready.
+`"on:idle"`: This optional boolean property determines whether the script should be loaded once the DOM is ready. For example, `<scripts-injector on:idle></scripts-injector>` will load the script as soon as the DOM is ready.
 
-`"on:interaction"`: This optional property allows you to specify a series of events that will trigger the loading of the script. It can be either "touchstart,click" or "mouseenter,focusin". For example, `<script-injector on:interaction="mouseenter, focusin"></script-injector>` will load the script when the user either mouses over the element or focuses on it.
+`"on:interaction"`: This optional property allows you to specify a series of events that will trigger the loading of the script. It can be either "touchstart,click" or "mouseenter,focusin". For example, `<scripts-injector on:interaction="mouseenter, focusin"></scripts-injector>` will load the script when the user either mouses over the element or focuses on it.
 
-`"on:visible"`: This optional property can be either a string or a boolean. If it's a string, it should specify the root margin for an Intersection Observer that will load the script when the element comes into view. If it's a boolean and it's true, the script will be loaded when the element comes into view with a default root margin. For example, `<script-injector on:visible="50px 1px"></script-injector>` will load the script when the element comes into view, with a root margin of 50px 1px.
+`"on:visible"`: This optional property can be either a string or a boolean. If it's a string, it should specify the root margin for an Intersection Observer that will load the script when the element comes into view. If it's a boolean and it's true, the script will be loaded when the element comes into view with a default root margin. For example, `<scripts-injector on:visible="50px 1px"></scripts-injector>` will load the script when the element comes into view, with a root margin of 50px 1px.
 
-`scripts`: This property should be a comma-separated string of scripts to be loaded. For example, `<script-injector scripts="script1.js,script2.js"></script-injector>` will load script1.js and script2.js.
+`scripts`: This property should be a comma-separated string of scripts to be loaded. For example, `<scripts-injector scripts="script1.js,script2.js"></scripts-injector>` will load script1.js and script2.js.
 
 ## Latest Features
 
@@ -135,9 +147,9 @@ document.addEventListener('data-loaded', (event) => {
 This passage provides a standard use case for the custom element. The script is designed to load when the user interacts with it, either through mouse entry or a focus event. If multiple script injectors are present with the same script, only the first one will execute the load. This is because once a script is loaded, all script injectors are notified and subsequently remove the script from their loading responsibilities.
 
 ```tsx
-<script-injector on:interaction="mouseenter,focusin" scripts={['path/to/my/element']}>
+<scripts-injector on:interaction="mouseenter,focusin" scripts={['path/to/my/element']}>
 	<lit-counter class="lit-counter" count={8}></lit-counter>
-</script-injector>
+</scripts-injector>
 ```
 
 ## Alternative Usage: Multi-Trigger Configuration

@@ -1,5 +1,20 @@
 # @ecopages/scripts-injector
 
+## 0.1.5
+
+### Patch Changes
+
+- Refactor `@ecopages/scripts-injector/global` to be framework-agnostic by returning a handle from `initGlobalInjector()`:
+    - `refresh()` to re-parse maps and re-bind trigger elements.
+    - `cleanup()` to disconnect observers and disable further refresh processing.
+- Remove built-in `eco:after-swap` coupling from the global injector.
+- Improve global injector runtime correctness:
+    - Keep per-element loaded script tracking for mixed rules.
+    - Ensure `data-loaded` is set consistently when all rule scripts are satisfied.
+    - Preserve listener teardown behavior to avoid interaction replay loops.
+    - Emit `failedScripts` in `DATA_LOADED` detail and write `data-error` on failures.
+- Expand and modernize the global injector test suite around idle/interaction/visible/mixed/binding/refresh lifecycles.
+
 ## 0.1.3
 
 ### Patch Changes

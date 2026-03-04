@@ -20,6 +20,13 @@ export type InjectorMapConfig = Record<string, TriggerSpecificConfig>;
 
 export type GlobalInjectorMapConfig = Record<string, InjectorMapConfig>;
 
+export interface GlobalInjectorHandle {
+	refresh: () => void;
+	cleanup: () => void;
+}
+
+export declare function initGlobalInjector(): GlobalInjectorHandle;
+
 declare global {
 	interface HTMLElementTagNameMap {
 		'scripts-injector': ScriptsInjector;

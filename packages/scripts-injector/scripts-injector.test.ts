@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waitFor } from '@testing-library/dom';
-import { ScriptsInjector } from './scripts-injector.ts';
+import { ScriptsInjector } from './scripts-injector';
 import { ScriptInjectorEvents } from './utils';
 
 describe('ScriptsInjector', () => {

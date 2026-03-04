@@ -8,219 +8,468 @@
  * component wrappers.
  */
 
-import type { GlobalInjectorMapConfig } from './types';
-import { cloneEvent, isScriptLoaded, loadScript, ScriptInjectorEvents, scriptsInFlight } from './utils';
+import type { GlobalInjectorMapConfig, TriggerSpecificConfig } from './types';
+import { ScriptInjectorEvents } from './utils';
+
+/**
+ * In-flight loading promises keyed by script URL.
+ *
+ * Shared across all `loadScript` calls so that concurrent requests for the same
+ * URL return the same promise rather than spawning multiple `<script>` tags.
+ */
+const loadingScripts = new Map<string, Promise<void>>();
+
+/**
+ * Returns `true` when a `<script src="...">` tag for the given URL already exists
+ * anywhere in the document — including tags injected by other means.
+ */
+function scriptExists(url: string): boolean {
+	return document.querySelector(`script[src="${url}"]`) !== null;
+}
+
+/**
+ * Appends a `<script type="module">` tag for `url` and returns a promise that
+ * settles when the browser signals load or error.
+ *
+ * @remarks
+ * Returns immediately if the script is already present in the DOM.
+ * Deduplicates concurrent calls for the same URL by reusing the pending promise
+ * stored in `loadingScripts`; the entry is deleted once the promise settles.
+ */
+function loadScript(url: string): Promise<void> {
+	if (scriptExists(url)) return Promise.resolve();
+
+	const existing = loadingScripts.get(url);
+	if (existing) return existing;
+
+	const promise = new Promise<void>((resolve, reject) => {
+		const script = document.createElement('script');
+		script.src = url;
+		script.type = 'module';
+		script.async = true;
+		script.onload = () => {
+			loadingScripts.delete(url);
+			resolve();
+		};
+		script.onerror = (event) => {
+			loadingScripts.delete(url);
+			reject(event);
+		};
+		document.head.appendChild(script);
+	});
+
+	loadingScripts.set(url, promise);
+	return promise;
+}
+
+/**
+ * Merges all `<script type="ecopages/global-injector-map">` tags found in the document
+ * into a single config object (later tags override earlier ones for duplicate keys).
+ *
+ * @remarks
+ * Managing or pruning stale map tags is intentionally left to the consumer.
+ */
+function parseTriggerMap(): GlobalInjectorMapConfig {
+	const mapScripts = document.querySelectorAll('script[type="ecopages/global-injector-map"]');
+	let merged: GlobalInjectorMapConfig = {};
+
+	for (const script of Array.from(mapScripts)) {
+		if (!script.textContent) continue;
+		try {
+			const parsed = JSON.parse(script.textContent) as GlobalInjectorMapConfig;
+			merged = { ...merged, ...parsed };
+		} catch (error) {
+			console.error('[global-injector] Failed to parse global-injector-map JSON', error);
+		}
+	}
+
+	return merged;
+}
+
+/**
+ * Loads the scripts defined in `rule` that have not yet been loaded for `element`.
+ *
+ * Tracks which scripts have already been loaded on a **per-element** basis via the
+ * `data-loaded-scripts` attribute so that mixed rules (e.g. `on:idle` + `on:interaction`)
+ * do not short-circuit each other.
+ */
+async function loadRuleScripts(element: Element, rule: TriggerSpecificConfig, reason: string): Promise<void> {
+	const loadedScriptsAttr = element.getAttribute('data-loaded-scripts') ?? '';
+	const loadedScripts = new Set(loadedScriptsAttr.split(',').filter(Boolean));
+	const scriptsToLoad = rule.scripts.filter((url) => !loadedScripts.has(url));
+
+	if (scriptsToLoad.length === 0) return;
+
+	const results = await Promise.allSettled(scriptsToLoad.map(loadScript));
+	const failedScripts: string[] = [];
+
+	element.setAttribute('data-load-reason', reason);
+
+	/**
+	 * Mark a URL as loaded when its settle result is `fulfilled`, or when the
+	 * `<script>` tag is already present in the DOM. The second condition covers
+	 * scripts that were injected externally between the time this call started
+	 * and when the promise settled (pre-existing tags, parallel injectors, etc.).
+	 */
+	for (let i = 0; i < scriptsToLoad.length; i++) {
+		if (results[i].status === 'fulfilled' || scriptExists(scriptsToLoad[i])) {
+			loadedScripts.add(scriptsToLoad[i]);
+		} else {
+			failedScripts.push(scriptsToLoad[i]);
+		}
+	}
+
+	element.setAttribute('data-loaded-scripts', Array.from(loadedScripts).join(','));
+
+	if (failedScripts.length > 0) {
+		const currentErrors = element.getAttribute('data-error') ?? '';
+		const mergedErrors = new Set(
+			[...currentErrors.split(',').filter(Boolean), ...failedScripts].filter(Boolean),
+		);
+		element.setAttribute('data-error', Array.from(mergedErrors).join(','));
+	}
+
+	/**
+	 * Broadcast the updated set of loaded scripts so that sibling injectors
+	 * (e.g. local `<scripts-injector>` custom elements on the same page) can
+	 * react without re-fetching scripts that are already available.
+	 */
+	document.dispatchEvent(
+		new CustomEvent(ScriptInjectorEvents.DATA_LOADED, {
+			detail: { loadedScripts: Array.from(loadedScripts), failedScripts },
+		}),
+	);
+}
+
+/**
+ * The object returned by {@link initGlobalInjector}.
+ */
+export interface GlobalInjectorHandle {
+	/**
+	 * Re-parses all `<script type="ecopages/global-injector-map">` tags currently
+	 * in the document and attempts to bind any unbound `[data-eco-trigger]` elements.
+	 *
+	 * Call this from your framework's navigation / page-swap hook (e.g. after a
+	 * view-transition or client-side route change) so that new page content is
+	 * picked up without a full re-initialisation.
+	 */
+	refresh: () => void;
+	/**
+	 * Disconnects the `MutationObserver` and all `IntersectionObserver` instances
+	 * created by this injector instance. Call this when the injector is no longer
+	 * needed to prevent memory leaks.
+	 */
+	cleanup: () => void;
+}
 
 /**
  * Initializes the Global Scripts Injector system on the current page.
  *
  * @remarks
- * 1. Parses any `<script type="ecopages/global-injector-map">` tags into a unified configuration.
+ * 1. Merges all `<script type="ecopages/global-injector-map">` tags into a config.
  * 2. Scans the initial DOM for elements with `data-eco-trigger` attributes.
- * 3. Sets up a `MutationObserver` to automatically bind new elements added later.
- * 4. Dispatches and listens to `DATA_LOADED` cross-injector events.
+ * 3. Sets up a `MutationObserver` to automatically bind elements added later.
  *
- * @returns A cleanup function that disconnects all active observers and removes event listeners.
+ * The returned {@link GlobalInjectorHandle} exposes:
+ * - `refresh()` — re-parses the map and re-binds elements. Wire this to your
+ *   framework's navigation / page-swap lifecycle hook.
+ * - `cleanup()` — disconnects all observers. Call when tearing down the injector.
+ *
+ * Compatibility fixes applied compared to v0.1.x:
+ * - Prevents interaction replay loops by removing capture listeners after first load.
+ * - Replays clicks via `composedPath()[0]` for shadow-DOM / Lit elements.
+ * - Tracks loaded scripts per element (`data-loaded-scripts`) for mixed rule support.
+ * - Supports trigger-ID changes on existing bound elements via `data-eco-bound-trigger`.
+ *
+ * @returns A {@link GlobalInjectorHandle} with `refresh` and `cleanup` methods.
  */
-export function initGlobalInjector(): () => void {
-	const mapScripts = document.querySelectorAll('script[type="ecopages/global-injector-map"]');
-	let globalConfigMap: GlobalInjectorMapConfig = {};
+export function initGlobalInjector(): GlobalInjectorHandle {
+	let triggerMap = parseTriggerMap();
 
-	for (const script of Array.from(mapScripts)) {
-		if (script.textContent) {
-			try {
-				const parsed = JSON.parse(script.textContent) as GlobalInjectorMapConfig;
-				globalConfigMap = { ...globalConfigMap, ...parsed };
-			} catch (e) {
-				console.error('[global-injector] Failed to parse global-injector-map JSON', e);
-			}
-		}
-	}
-
+	/**
+	 * WeakMap from element → list of currently registered interaction listeners.
+	 * Used to remove them after a successful interaction-driven load, preventing
+	 * the listener from firing again and causing a replay loop.
+	 */
+	const interactionListeners = new WeakMap<Element, { eventType: string; listener: EventListener }[]>();
 	const intersectionObservers: IntersectionObserver[] = [];
-	const registeredEvents: { element: Element; type: string; listener: EventListener }[] = [];
-	let failedScripts: string[] = [];
 
-	/**
-	 * Dispatches a global event informing other injectors (like local `<scripts-injector>` instances)
-	 * that specific scripts have finished loading or failed.
-	 */
-	const notifyInjectors = (scriptsToLoad: string[]) => {
-		document.dispatchEvent(
-			new CustomEvent(ScriptInjectorEvents.DATA_LOADED, {
-				detail: {
-					loadedScripts: scriptsToLoad,
-					failedScripts: failedScripts,
-				},
-			}),
-		);
+	const unbindTrigger = (element: Element): void => {
+		const boundListeners = interactionListeners.get(element) ?? [];
+		for (const { eventType, listener } of boundListeners) {
+			element.removeEventListener(eventType, listener, true);
+		}
+		interactionListeners.delete(element);
+		element.removeAttribute('data-eco-bound');
+		element.removeAttribute('data-eco-bound-trigger');
+		element.removeAttribute('data-loaded-scripts');
+		element.removeAttribute('data-loaded');
+		element.removeAttribute('data-load-reason');
+		element.removeAttribute('data-error');
 	};
 
-	/**
-	 * Safely initiates the loading of a set of scripts for a given trigger condition.
-	 * Updates the element's DOM attributes (`data-loaded`, `data-load-reason`, `data-error`)
-	 * based on the loading results.
-	 */
-	const triggerScriptLoad = async (reason: string, scriptsToLoad: string[], element?: Element) => {
-		if (element && element.hasAttribute('data-loaded')) return;
-
-		failedScripts = [];
-		const loadResults: { script: string; promise: Promise<void> }[] = [];
-
-		for (const script of scriptsToLoad) {
-			if (!isScriptLoaded(script) && !scriptsInFlight.has(script)) {
-				scriptsInFlight.add(script);
-				loadResults.push({ script, promise: loadScript(script) });
-			}
-		}
-
-		const results = await Promise.allSettled(loadResults.map((r) => r.promise));
-
-		try {
-			for (let i = 0; i < results.length; i++) {
-				const result = results[i];
-				if (result.status === 'rejected') {
-					failedScripts.push(loadResults[i].script);
-				}
-			}
-		} finally {
-			for (const { script } of loadResults) {
-				scriptsInFlight.delete(script);
-			}
-		}
-
-		if (element) {
-			element.setAttribute('data-load-reason', reason);
-			if (failedScripts.length > 0) {
-				const currentError = element.getAttribute('data-error');
-				const newErrors = currentError ? `${currentError},${failedScripts.join(',')}` : failedScripts.join(',');
-				element.setAttribute('data-error', newErrors);
-			}
-
-			const allLoaded = scriptsToLoad.every((s) => isScriptLoaded(s));
-			if (allLoaded) {
-				element.setAttribute('data-loaded', '');
-			}
-		}
-
-		notifyInjectors(scriptsToLoad);
-	};
-
-	/**
-	 * Binds interaction, visibility, or idle listeners to a specific HTML element
-	 * based on its `data-eco-trigger` attribute and the global configuration map.
-	 */
-	const bindElement = (element: Element) => {
-		if (element.hasAttribute('data-eco-bound')) return;
+	const bindTrigger = (element: Element): void => {
+		if (!(element instanceof HTMLElement)) return;
 
 		const triggerId = element.getAttribute('data-eco-trigger');
-		if (!triggerId || !globalConfigMap[triggerId]) return;
+		if (!triggerId) return;
+
+		const alreadyBound = element.hasAttribute('data-eco-bound');
+		const boundTriggerId = element.getAttribute('data-eco-bound-trigger');
+
+		/**
+		 * If the element is already bound to the same trigger ID there is nothing
+		 * to do — all listeners and observers are already in place.
+		 */
+		if (alreadyBound && boundTriggerId === triggerId) return;
+
+		/**
+		 * The `data-eco-trigger` attribute was changed while the element was
+		 * already bound. Tear down every listener, observer, and data attribute
+		 * from the previous binding before proceeding with the new trigger ID.
+		 */
+		if (alreadyBound && boundTriggerId !== triggerId) {
+			unbindTrigger(element);
+		}
+
+		const entry = triggerMap[triggerId];
+		if (!entry) return;
+
+		/**
+		 * Deduplicated flat list of every script URL referenced by any rule for
+		 * this trigger. Used after each rule loads to determine whether the element
+		 * as a whole is fully loaded — i.e. whether `data-loaded` should be set.
+		 */
+		const allEntryScripts = Array.from(
+			new Set(
+				Object.values(entry)
+					.flatMap((rule) => (Array.isArray(rule?.scripts) ? rule.scripts : []))
+					.filter(Boolean),
+			),
+		);
 
 		element.setAttribute('data-eco-bound', 'true');
-		const config = globalConfigMap[triggerId];
+		element.setAttribute('data-eco-bound-trigger', triggerId);
 
-		for (const triggerKey in config) {
-			if (triggerKey.startsWith('on:idle')) {
-				queueMicrotask(() => triggerScriptLoad('idle', config[triggerKey].scripts, element));
-			} else if (triggerKey.startsWith('on:interaction')) {
-				const eventsStr = config[triggerKey].value as string;
-				if (!eventsStr) continue;
+		for (const [ruleType, rule] of Object.entries(entry)) {
+			if (!rule || !Array.isArray(rule.scripts) || rule.scripts.length === 0) continue;
 
-				for (const event of eventsStr.split(',')) {
-					const eventType = event.trim();
-					if (eventType) {
-						const listener = async (e: Event) => {
-							e.stopImmediatePropagation();
-							e.preventDefault();
-
-							await triggerScriptLoad(`interaction:${e.type}`, config[triggerKey].scripts, element);
-
-							if (e.target === element) return;
-
-							if (e.type === 'click' && e.target instanceof HTMLElement) {
-								e.target.click();
-								return;
-							}
-
-							const clonedEvent = cloneEvent(e);
-							if (clonedEvent) {
-								e.target?.dispatchEvent(clonedEvent);
-							}
-						};
-						element.addEventListener(eventType, listener);
-						registeredEvents.push({ element, type: eventType, listener });
-					}
-				}
-			} else if (triggerKey.startsWith('on:visible')) {
-				const marginOverride = config[triggerKey].value as string | undefined;
-				const rootMargin =
-					marginOverride !== undefined && marginOverride !== '' && marginOverride !== 'true'
-						? marginOverride
-						: '50px 0px';
-
-				const options: IntersectionObserverInit = {
-					rootMargin,
-					threshold: 0.1,
-				};
-
-				const observer = new IntersectionObserver((entries) => {
-					for (const entry of entries) {
-						if (entry.isIntersecting) {
-							triggerScriptLoad('visible', config[triggerKey].scripts, element);
-							observer.disconnect();
+			/**
+			 * `on:idle` — load scripts as soon as the current task queue is drained.
+			 *
+			 * `queueMicrotask` defers execution until after the current synchronous
+			 * work finishes, giving the rest of the page a chance to initialize
+			 * before network requests begin.
+			 */
+			if (ruleType === 'on:idle') {
+				queueMicrotask(() => {
+					void loadRuleScripts(element, rule, 'idle').then(() => {
+						const attr = element.getAttribute('data-loaded-scripts') ?? '';
+						const loaded = new Set(attr.split(',').filter(Boolean));
+						if (allEntryScripts.every((url) => loaded.has(url))) {
+							element.setAttribute('data-loaded', '');
 						}
-					}
-				}, options);
+					});
+				});
+				continue;
+			}
 
+			/**
+			 * `on:visible` — load scripts when the element enters the viewport.
+			 *
+			 * An `IntersectionObserver` is created with the margin specified in
+			 * `rule.value` (e.g. `"100px 0px"`), falling back to `"50px 0px"` when
+			 * the value is absent or the literal string `"true"`. The observer
+			 * disconnects immediately after the first intersection to avoid
+			 * repeated loads.
+			 */
+			if (ruleType === 'on:visible') {
+				const observer = new IntersectionObserver(
+					(entries) => {
+						for (const entry of entries) {
+							if (entry.isIntersecting) {
+								void loadRuleScripts(element, rule, 'visible').then(() => {
+									const attr = element.getAttribute('data-loaded-scripts') ?? '';
+									const loaded = new Set(attr.split(',').filter(Boolean));
+									if (allEntryScripts.every((url) => loaded.has(url))) {
+										element.setAttribute('data-loaded', '');
+									}
+								});
+								observer.disconnect();
+							}
+						}
+					},
+					{
+						rootMargin:
+							rule.value && rule.value !== 'true' ? (rule.value as string) : '50px 0px',
+						threshold: 0.1,
+					},
+				);
 				observer.observe(element);
 				intersectionObservers.push(observer);
+				continue;
+			}
+
+			/**
+			 * `on:interaction` — load scripts when the user interacts with the element.
+			 *
+			 * `rule.value` is a comma-separated list of DOM event types
+			 * (e.g. `"click,mouseenter"`). A capturing listener is registered for
+			 * each type so it fires before any inner handlers. After the scripts
+			 * finish loading the listeners are removed and the original event is
+			 * replayed on the correct target.
+			 */
+			if (ruleType === 'on:interaction') {
+				const eventTypes = ((rule.value as string) ?? '')
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean);
+
+				if (eventTypes.length === 0) continue;
+
+				const elementListeners = interactionListeners.get(element) ?? [];
+
+				for (const eventType of eventTypes) {
+					const listener: EventListener = async (event) => {
+						/**
+						 * Bail out early if every script for this rule is already recorded
+						 * in `data-loaded-scripts`. This prevents redundant network requests
+						 * when the element receives repeated events after the initial load.
+						 */
+						const loadedScriptsAttr = element.getAttribute('data-loaded-scripts') ?? '';
+						const loadedScripts = new Set(loadedScriptsAttr.split(',').filter(Boolean));
+						if (rule.scripts.every((url) => loadedScripts.has(url))) return;
+
+						event.stopImmediatePropagation();
+						event.preventDefault();
+
+						await loadRuleScripts(element, rule, `interaction:${event.type}`);
+
+						/**
+						 * After the current rule's scripts have loaded, re-read
+						 * `data-loaded-scripts` and check whether every script across
+						 * all rules for this trigger is now present. Only then is the
+						 * element considered fully loaded and `data-loaded` is set.
+						 */
+						const updatedAttr = element.getAttribute('data-loaded-scripts') ?? '';
+						const updatedLoaded = new Set(updatedAttr.split(',').filter(Boolean));
+						if (allEntryScripts.every((url) => updatedLoaded.has(url))) {
+							element.setAttribute('data-loaded', '');
+						}
+
+						/**
+						 * Remove every capture listener that was registered for this
+						 * element. Without this step the listener would intercept the
+						 * replayed event below and trigger a second (no-op but disruptive)
+						 * load cycle, causing the page to become temporarily unresponsive.
+						 */
+						const bound = interactionListeners.get(element) ?? [];
+						for (const { eventType: et, listener: l } of bound) {
+							element.removeEventListener(et, l, true);
+						}
+						interactionListeners.delete(element);
+
+						/**
+						 * Replay the original interaction on the element that the user
+						 * actually targeted, now that the required scripts are loaded.
+						 *
+						 * `event.composedPath()[0]` is preferred over `event.target` because
+						 * inside a shadow DOM (e.g. a Lit custom element) `event.target`
+						 * resolves to the shadow host while `composedPath()[0]` resolves to
+						 * the actual inner element — which is what the user clicked.
+						 */
+						const originalTarget =
+							typeof event.composedPath === 'function'
+								? (event.composedPath()[0] as Element | null)
+								: null;
+
+						if (event.type === 'click') {
+							if (originalTarget instanceof HTMLElement && originalTarget !== element) {
+								originalTarget.click();
+							} else if (event.target instanceof HTMLElement && event.target !== element) {
+								(event.target as HTMLElement).click();
+							}
+						}
+					};
+
+					element.addEventListener(eventType, listener, true);
+					elementListeners.push({ eventType, listener });
+				}
+
+				interactionListeners.set(element, elementListeners);
 			}
 		}
 	};
 
-	document.querySelectorAll('[data-eco-trigger]').forEach(bindElement);
+	/**
+	 * Bind all elements that already exist in the DOM at initialization time.
+	 */
+	document.querySelectorAll('[data-eco-trigger]').forEach(bindTrigger);
 
-	const observer = new MutationObserver((mutations) => {
+	/**
+	 * Watch for elements with `data-eco-trigger` that are added to the DOM after
+	 * the initial render (e.g. via client-side rendering, portals, or dynamic
+	 * HTML injection). Also responds to in-place `data-eco-trigger` attribute
+	 * changes so that trigger reassignments are handled without a full re-init.
+	 */
+	const mutationObserver = new MutationObserver((mutations) => {
 		for (const mutation of mutations) {
 			if (mutation.type === 'childList') {
 				for (const node of Array.from(mutation.addedNodes)) {
-					if (node instanceof Element) {
-						if (node.hasAttribute('data-eco-trigger')) bindElement(node);
-						node.querySelectorAll('[data-eco-trigger]').forEach(bindElement);
-					}
+					if (!(node instanceof Element)) continue;
+					if (node.hasAttribute('data-eco-trigger')) bindTrigger(node);
+					node.querySelectorAll('[data-eco-trigger]').forEach(bindTrigger);
 				}
-			} else if (mutation.type === 'attributes' && mutation.attributeName === 'data-eco-trigger') {
-				if (mutation.target instanceof Element) bindElement(mutation.target);
+				continue;
+			}
+
+			if (mutation.type === 'attributes' && mutation.attributeName === 'data-eco-trigger') {
+				if (mutation.target instanceof Element) bindTrigger(mutation.target);
 			}
 		}
 	});
 
+	const observerOptions: MutationObserverInit = {
+		childList: true,
+		subtree: true,
+		attributes: true,
+		attributeFilter: ['data-eco-trigger'],
+	};
+
 	if (document.body) {
-		observer.observe(document.body, {
-			childList: true,
-			subtree: true,
-			attributes: true,
-			attributeFilter: ['data-eco-trigger'],
-		});
+		mutationObserver.observe(document.body, observerOptions);
 	} else {
 		document.addEventListener('DOMContentLoaded', () => {
-			document.querySelectorAll('[data-eco-trigger]').forEach(bindElement);
-			observer.observe(document.body, {
-				childList: true,
-				subtree: true,
-				attributes: true,
-				attributeFilter: ['data-eco-trigger'],
-			});
+			document.querySelectorAll('[data-eco-trigger]').forEach(bindTrigger);
+			mutationObserver.observe(document.body, observerOptions);
 		});
 	}
 
-	return () => {
-		observer.disconnect();
-		for (const obs of intersectionObservers) {
-			obs.disconnect();
-		}
-		for (const { element, type, listener } of registeredEvents) {
-			element.removeEventListener(type, listener);
-		}
+	let active = true;
+
+	return {
+		/**
+		 * Re-parses all trigger-map scripts and re-binds every `[data-eco-trigger]`
+		 * element currently in the DOM. Intended to be called from the framework's
+		 * navigation or page-swap lifecycle hook.
+		 *
+		 * Has no effect after `cleanup()` has been called.
+		 */
+		refresh() {
+			if (!active) return;
+			triggerMap = parseTriggerMap();
+			document.querySelectorAll('[data-eco-trigger]').forEach(bindTrigger);
+		},
+		/**
+		 * Disconnects the `MutationObserver` and all `IntersectionObserver` instances
+		 * so that nothing continues to run after the caller no longer needs the injector.
+		 *
+		 * After this is called, `refresh()` becomes a no-op.
+		 */
+		cleanup() {
+			active = false;
+			mutationObserver.disconnect();
+			for (const obs of intersectionObservers) obs.disconnect();
+		},
 	};
 }

@@ -181,3 +181,6 @@ test-results
 packages/scripts-injector/scripts-injector.js
 packages/scripts-injector/global-injector.js
 packages/scripts-injector/utils.js
+
+# ai
+.agent

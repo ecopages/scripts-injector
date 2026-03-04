@@ -1,7 +1,7 @@
 {
 	"name": "@ecopages/scripts-injector",
 	"main": "dist/scripts-injector.js",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"type": "module",
 	"types": "types.d.ts",
 	"repository": {
@@ -13,10 +13,12 @@
 			"import": "./package.json"
 		},
 		".": {
+			"types": "./types.d.ts",
 			"import": "./dist/scripts-injector.js",
 			"require": "./dist/scripts-injector.js"
 		},
 		"./global": {
+			"types": "./types.d.ts",
 			"import": "./dist/global-injector.js",
 			"require": "./dist/global-injector.js"
 		},
