@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import './fonts.css';
 
 @theme {
 	--color-surface-50: oklch(0.98 0 0);
@@ -106,4 +105,11 @@ body {
 			}
 		}
 	}
+}
+
+@theme {
+	--color-brand-primary: var(--color-blue-700);
+	--color-brand-hover: var(--color-blue-800);
+	--color-background-accent: var(--color-gray-50);
+	--font-display: 'Inter', sans-serif;
 }

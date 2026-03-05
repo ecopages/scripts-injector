@@ -4,7 +4,6 @@ import { BaseLayout } from '@/layouts/base-layout';
 
 export default eco.page<Error404TemplateProps>({
 	dependencies: {
-		stylesheets: ['./404.css'],
 		components: [BaseLayout],
 	},
 
