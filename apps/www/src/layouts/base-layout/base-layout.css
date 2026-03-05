@@ -8,10 +8,10 @@
 		font-family: var(--font-display);
 		letter-spacing: -0.01em;
 		color: var(--color-on-background);
+	}
 
-		&__version {
-			@apply bg-on-background text-background rounded-md text-xs font-normal ml-2 p-1;
-		}
+	.site-logo__version {
+		@apply bg-on-background text-background rounded-md text-xs font-normal ml-2 p-1;
 	}
 
 	.layout-main {
