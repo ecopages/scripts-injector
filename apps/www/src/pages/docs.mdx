@@ -1,22 +1,22 @@
 
 import { eco } from '@ecopages/core';
-import { BaseLayout } from '@/layouts/base-layout/base-layout.kita';
+import { ProseLayout } from '@/layouts/prose-layout/prose-layout';
 
 export const config = {
-  layout: BaseLayout,
+  layout: ProseLayout,
 };
 
 # Scripts Injector
 
 The Scripts Injector is a custom element designed to dynamically load scripts into your web page. It provides a way to load scripts based on certain conditions and events.
 
-<div class="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 px-5 py-4 my-6">
-  <p class="m-0 text-sm font-bold text-blue-900 dark:text-blue-100">
+<div class="rounded-md border border-primary/30 bg-primary-container px-5 py-4 my-6">
+  <p class="m-0 text-sm font-bold text-on-primary-container">
     <strong>Need a no-wrapper approach?</strong>
   </p>
-  <p class="m-0 mt-1 text-sm text-blue-800 dark:text-blue-200">
+  <p class="m-0 mt-1 text-sm text-on-primary-container/80">
     Use the Global Script Injector with <code>data-eco-trigger</code>.
-    <a href="/global" class="ml-1 font-semibold text-blue-700 dark:text-blue-300 no-underline hover:underline">Read the Global docs →</a>
+    <a href="/global" class="ml-1 font-semibold text-link no-underline hover:underline">Read the Global docs →</a>
   </p>
 </div>
 
