@@ -4,7 +4,7 @@ if (select) {
 	const feedback = document.getElementById('demo-select-feedback');
 	if (feedback) {
 		feedback.textContent = `Selection changed to: ${val}`;
-		feedback.className = 'mt-2 text-sm text-blue-600 font-bold';
+		feedback.className = 'mt-4 text-center h-4 font-semibold text-accent';
 	}
 	select.setAttribute('data-script-loaded', 'true');
 }

@@ -77,8 +77,8 @@ function initAccelerationEffect() {
 						45% {
 							filter: brightness(2.6);
 							text-shadow: 0 0 10px rgba(255, 255, 255, 0.85),
-								0 0 18px rgba(120, 200, 255, 0.7),
-								0 0 28px rgba(80, 160, 255, 0.55);
+								0 0 18px rgba(34, 211, 238, 0.7),
+								0 0 28px rgba(6, 182, 212, 0.55);
 						}
 						100% {
 							filter: brightness(1);

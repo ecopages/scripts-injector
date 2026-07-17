@@ -1,8 +1,8 @@
 const parent = document.getElementById('demo-nested-parent');
 if (parent) {
-	parent.style.border = '2px dashed #4F46E5';
+	parent.classList.add('border-primary', 'border-2', 'border-dashed');
 	const label = document.createElement('span');
 	label.textContent = 'Parent Loaded ';
-	label.className = 'absolute top-0 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-bl';
+	label.className = 'absolute top-0 left-0 bg-primary text-on-primary text-xs px-2 py-1 rounded-br-sm';
 	parent.appendChild(label);
 }

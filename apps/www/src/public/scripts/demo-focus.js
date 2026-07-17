@@ -1,12 +1,13 @@
 const input = document.getElementById('demo-focus-input');
 
 if (input) {
-	input.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
+	input.classList.add('ring-4', 'ring-primary/30', 'bg-primary-container', 'border-primary/40');
 	input.placeholder = 'Search active...';
 	input.setAttribute('data-script-loaded', 'true');
 
-	const feedback = document.createElement('div');
-	feedback.textContent = 'Input activated via script!';
-	feedback.className = 'text-xs text-blue-600 mt-1 font-bold';
-	input.parentNode.appendChild(feedback);
+	const feedback = document.getElementById('demo-focus-feedback');
+	if (feedback) {
+		feedback.textContent = 'Input activated via script';
+		feedback.className = 'text-sm text-accent font-medium';
+	}
 }

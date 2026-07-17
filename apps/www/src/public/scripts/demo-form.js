@@ -5,7 +5,7 @@ if (form) {
 	const feedback = document.getElementById('demo-form-feedback');
 	if (feedback) {
 		feedback.textContent = 'Form validated and submitted';
-		feedback.className = 'mt-2 text-sm text-green-600 font-semibold';
+		feedback.className = 'text-sm text-accent font-medium';
 		console.log('Demo form script executed: Form validated and submitted', new FormData(form).get('email'));
 	}
 }
