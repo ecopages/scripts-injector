@@ -1,115 +1,37 @@
 @import 'tailwindcss';
+@import './theme.css';
+@import './fonts.css';
+@import './components/button.css';
+@import './components/prose.css';
 
-@theme {
-	--color-surface-50: oklch(0.98 0 0);
-	--color-surface-100: oklch(0.95 0 0);
-	--color-surface-200: oklch(0.9 0 0);
-	--color-surface-300: oklch(0.8 0 0);
-	--color-surface-400: oklch(0.6 0 0);
-	--color-surface-500: oklch(0.5 0 0);
-	--color-surface-600: oklch(0.4 0 0);
-	--color-surface-700: oklch(0.3 0 0);
-	--color-surface-800: oklch(0.2 0 0);
-	--color-surface-900: oklch(0.12 0 0);
-	--color-surface-950: oklch(0.08 0 0);
-
-	--color-accent: oklch(0.7 0.15 220);
-
-	--color-white: oklch(1 0 0);
-	--color-black: oklch(0 0 0);
-
-	--color-background: var(--color-surface-950);
-	--color-on-background: var(--color-surface-100);
-	--color-muted: var(--color-surface-400);
-
-	--color-background-accent: var(--color-surface-900);
-	--color-on-background-accent: var(--color-surface-100);
-	--color-border: var(--color-surface-700);
-
-	--font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
-	--font-display: 'Karla', ui-sans-serif, system-ui, sans-serif;
-	--font-mono: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+html {
+	scrollbar-gutter: stable;
 }
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+* {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklab, var(--color-on-background) 30%, transparent) var(--color-background-accent);
+}
+
+*::-webkit-scrollbar {
+	width: 0.75rem;
+	height: 0.75rem;
+}
+
+*::-webkit-scrollbar-track {
+	background: var(--color-background-accent);
+}
+
+*::-webkit-scrollbar-thumb {
+	background: color-mix(in oklab, var(--color-on-background) 30%, transparent);
+	border: 0.1875rem solid var(--color-background-accent);
+	border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background: color-mix(in oklab, var(--color-on-background) 42%, transparent);
+}
 
 body {
-	@apply bg-background min-h-dvh flex flex-col antialiased transition-colors duration-200;
-}
-
-:root {
-	color-scheme: light;
-	--color-background: var(--color-white);
-	--color-on-background: var(--color-surface-900);
-	--color-muted: var(--color-surface-500);
-
-	--color-background-accent: var(--color-surface-50);
-	--color-on-background-accent: var(--color-surface-900);
-}
-
-[data-theme='dark'] {
-	color-scheme: dark;
-	--color-background: var(--color-surface-950);
-	--color-on-background: var(--color-surface-100);
-
-	--color-background-accent: var(--color-surface-800);
-	--color-on-background-accent: var(--color-surface-100);
-	--color-muted: var(--color-surface-400);
-}
-
-@layer components {
-	.prose {
-		@apply leading-relaxed text-zinc-900 dark:text-zinc-100;
-
-		h1,
-		h2,
-		h3 {
-			@apply font-semibold mb-4 mt-0 font-display tracking-tight;
-		}
-		h1 {
-			@apply text-3xl;
-		}
-		h2 {
-			@apply text-2xl;
-		}
-		h3 {
-			@apply text-xl text-zinc-500 dark:text-zinc-400;
-		}
-
-		p {
-			@apply text-sm my-4;
-		}
-
-		a {
-			@apply hover:underline underline-offset-2 text-blue-600 dark:text-blue-400;
-		}
-
-		ul,
-		ol {
-			@apply my-4 pl-6 list-disc;
-		}
-
-		li {
-			@apply my-1;
-		}
-
-		code {
-			@apply text-sm py-0.5 px-1.5 rounded bg-background-accent font-mono;
-		}
-
-		pre {
-			@apply p-4 rounded-lg overflow-x-auto my-6 bg-background-accent text-on-background-accent;
-
-			code {
-				@apply bg-transparent p-0 text-inherit;
-			}
-		}
-	}
-}
-
-@theme {
-	--color-brand-primary: var(--color-blue-700);
-	--color-brand-hover: var(--color-blue-800);
-	--color-background-accent: var(--color-gray-50);
-	--font-display: 'Inter', sans-serif;
+	@apply bg-background text-on-background min-h-svh w-screen overflow-x-hidden font-sans relative z-0 flex flex-col antialiased;
 }

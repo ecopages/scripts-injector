@@ -1,0 +1,84 @@
+.button,
+a.button {
+	@apply inline-flex items-center justify-center gap-2;
+	@apply no-underline font-semibold text-sm rounded-md border-2 cursor-pointer transition-colors duration-200;
+
+	&--default {
+		@apply px-4 py-2 leading-6;
+		&:has(> svg:first-child) {
+			@apply pl-2;
+		}
+		&:has(> svg:last-child) {
+			@apply pr-2;
+		}
+		@apply bg-on-background text-background border-on-background;
+		@apply hover:bg-on-background/90;
+	}
+
+	&--primary {
+		@apply px-4 py-2 leading-6;
+		&:has(> svg:first-child) {
+			@apply pl-2;
+		}
+		&:has(> svg:last-child) {
+			@apply pr-2;
+		}
+		@apply bg-primary text-on-primary border-primary;
+		@apply hover:bg-primary/90;
+	}
+
+	&--outline {
+		@apply px-4 py-2 leading-6;
+		&:has(> svg:first-child) {
+			@apply pl-2;
+		}
+		&:has(> svg:last-child) {
+			@apply pr-2;
+		}
+		@apply bg-transparent text-on-background border-on-background;
+		@apply hover:bg-on-background/10;
+	}
+
+	&--ghost {
+		@apply px-4 py-2 leading-6;
+		@apply bg-transparent text-on-background border-transparent;
+		@apply hover:bg-on-background/10;
+	}
+
+	&--tonal {
+		@apply px-4 py-2 leading-6;
+		&:has(> svg:first-child) {
+			@apply pl-2;
+		}
+		&:has(> svg:last-child) {
+			@apply pr-2;
+		}
+		@apply bg-on-background/5 text-on-background border-transparent;
+		@apply hover:bg-on-background/10;
+	}
+
+	&--text {
+		@apply px-0 py-0 leading-6 border-transparent;
+		@apply bg-transparent text-on-background;
+		@apply hover:underline hover:underline-offset-2;
+	}
+
+	&--sm {
+		@apply px-1.5 py-1 text-xs gap-1 leading-3.5 font-medium;
+
+		&:has(> svg:first-child) {
+			@apply pl-1;
+		}
+		&:has(> svg:last-child) {
+			@apply pr-1;
+		}
+
+		svg {
+			@apply h-3 w-3;
+		}
+	}
+}
+
+.button-group {
+	@apply flex gap-4 items-center;
+}
