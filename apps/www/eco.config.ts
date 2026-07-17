@@ -1,75 +1,52 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ConfigBuilder } from '@ecopages/core/config-builder';
-import { imageProcessorPlugin } from '@ecopages/image-processor';
-import { kitajsPlugin } from '@ecopages/kitajs';
-import { mdxPlugin } from '@ecopages/mdx';
+import { ecopagesJsxPlugin } from '@ecopages/ecopages-jsx';
 import { postcssProcessorPlugin } from '@ecopages/postcss-processor';
 import { tailwindV4Preset } from '@ecopages/postcss-processor/presets/tailwind-v4';
 import remarkGfm from 'remark-gfm';
 import rehypePrettyCode from 'rehype-pretty-code';
 import { rehypeSimpleTableWrapper } from './src/plugins/rehype-simple-table-wrapper';
 import { remarkEscapeInlineCodeHtml } from '@/plugins/remark-escape-inline-code-html';
-import { transformerEscapeHtml } from './src/plugins/transformer-escape-html';
+import { transformerEscapeHtml } from '@ecopages/ecopages-jsx/plugins/transformer-escape-html';
+
+const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const config = await new ConfigBuilder()
-	.setRootDir(import.meta.dir)
-	.setBaseUrl(import.meta.env.ECOPAGES_BASE_URL)
+	.setRootDir(appRoot)
 	.setIntegrations([
-		kitajsPlugin(),
-		mdxPlugin({
-			compilerOptions: {
-				jsxImportSource: '@kitajs/html',
-				remarkPlugins: [remarkGfm, remarkEscapeInlineCodeHtml],
-				rehypePlugins: [
-					[
-						rehypePrettyCode,
-						{
-							theme: {
-								light: 'light-plus',
-								dark: 'dark-plus',
+		ecopagesJsxPlugin({
+			extensions: ['.tsx'],
+			mdx: {
+				enabled: true,
+				extensions: ['.mdx'],
+				compilerOptions: {
+					remarkPlugins: [remarkGfm, remarkEscapeInlineCodeHtml],
+					rehypePlugins: [
+						[
+							rehypePrettyCode,
+							{
+								theme: { light: 'light-plus', dark: 'dark-plus' },
 							},
-							transformers: [transformerEscapeHtml],
-						},
+						],
+						rehypeSimpleTableWrapper,
 					],
-					rehypeSimpleTableWrapper,
-				],
+				},
 			},
 		}),
 	])
 	.setProcessors([
 		postcssProcessorPlugin(
 			tailwindV4Preset({
-				referencePath: path.resolve(import.meta.dir, 'src/styles/tailwind.css'),
+				referencePath: path.resolve(appRoot, 'src/styles/tailwind.css'),
 			}),
 		),
-		imageProcessorPlugin({
-			options: {
-				sourceDir: path.resolve(import.meta.dir, 'src/images'),
-				outputDir: path.resolve(import.meta.dir, '.eco/images'),
-				publicPath: '/images',
-				acceptedFormats: ['jpg', 'jpeg', 'png', 'webp'],
-				quality: 80,
-				format: 'webp',
-				sizes: [
-					{ width: 320, label: 'sm' },
-					{ width: 768, label: 'md' },
-					{ width: 1024, label: 'lg' },
-					{ width: 1920, label: 'xl' },
-				],
-			},
-		}),
 	])
-	.setIncludesTemplates({
-		head: 'head.kita.tsx',
-		html: 'html.kita.tsx',
-		seo: 'seo.kita.tsx',
-	})
 	.setDefaultMetadata({
 		title: 'Scripts Injector - Orchestrate your scripts declaratively',
 		description:
 			'Scripts Injector is a lightweight library that allows you to orchestrate your scripts declaratively with ease.',
 	})
-	.setError404Template('404.kita.tsx')
 	.build();
 
 export default config;
