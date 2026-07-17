@@ -1,0 +1,11 @@
+.logo {
+	@apply font-semibold text-lg leading-none tracking-tight text-on-background font-heading;
+	@apply no-underline inline-flex items-center gap-1.5;
+	&:hover {
+		@apply text-on-background/80;
+	}
+
+	svg {
+		@apply block h-7 w-auto;
+	}
+}
