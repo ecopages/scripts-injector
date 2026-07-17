@@ -20,12 +20,8 @@ export const Footer = eco.component<
 				<div class="footer__container">
 					<p class="footer__copyright">
 						Built with{' '}
-						<a href="https://github.com/ecopages/ecopages" class="footer__link">
+						<a href="https://github.com/ecopages/ecopages" class="footer__link font-bold">
 							ecopages
-						</a>{' '}
-						by{' '}
-						<a href="https://github.com/andeeplus" class="footer__link">
-							@andeeplus
 						</a>
 					</p>
 					<div class="footer__right">

@@ -27,7 +27,6 @@ export default eco.page({
 		return (
 			<div class="showcase">
 				<section class="showcase-hero">
-					<p class="showcase-hero__subtitle">Scripts Injector</p>
 					<h1 class="showcase-hero__title">
 						Orchestrate scripts.
 						<br />
