@@ -4,7 +4,7 @@
 	}
 
 	.showcase-hero {
-		@apply flex flex-col items-center text-center border-b border-border py-12 md:py-32;
+		@apply flex flex-col items-center text-center py-12 md:py-32;
 	}
 
 	.showcase-hero__subtitle {
