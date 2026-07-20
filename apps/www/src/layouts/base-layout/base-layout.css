@@ -20,7 +20,7 @@
 		}
 
 		&__link {
-			@apply inline-flex items-center justify-center text-on-background/60 no-underline transition-colors hover:text-on-background;
+			@apply text-sm inline-flex items-center justify-center text-on-background/60 no-underline transition-colors hover:text-on-background;
 		}
 	}
 

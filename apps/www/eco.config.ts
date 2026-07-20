@@ -7,8 +7,6 @@ import { tailwindV4Preset } from '@ecopages/postcss-processor/presets/tailwind-v
 import remarkGfm from 'remark-gfm';
 import rehypePrettyCode from 'rehype-pretty-code';
 import { rehypeSimpleTableWrapper } from './src/plugins/rehype-simple-table-wrapper';
-import { remarkEscapeInlineCodeHtml } from '@/plugins/remark-escape-inline-code-html';
-import { transformerEscapeHtml } from '@ecopages/ecopages-jsx/plugins/transformer-escape-html';
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,7 +19,7 @@ const config = await new ConfigBuilder()
 				enabled: true,
 				extensions: ['.mdx'],
 				compilerOptions: {
-					remarkPlugins: [remarkGfm, remarkEscapeInlineCodeHtml],
+					remarkPlugins: [remarkGfm],
 					rehypePlugins: [
 						[
 							rehypePrettyCode,

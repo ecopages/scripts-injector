@@ -25,6 +25,9 @@ export const BaseLayout = eco.component<BaseLayoutProps, JsxRenderable>({
 							<p class="version">v {pkg.version}</p>
 						</div>
 						<nav class="header__nav">
+							<a href="/docs" class="header__link">
+								Docs
+							</a>
 							<a
 								href="https://github.com/ecopages/scripts-injector"
 								class="header__link"
