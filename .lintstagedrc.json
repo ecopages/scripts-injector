@@ -1,3 +1,4 @@
 {
-	"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": ["bun run lint:fix"]
+	"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx}": ["bun run lint:fix"],
+	"*.{json,jsonc}": ["bunx prettier --write"]
 }

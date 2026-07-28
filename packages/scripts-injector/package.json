@@ -36,9 +36,6 @@
 		"@vitest/browser-playwright": "^4.0.16",
 		"vitest": "^4.0.16"
 	},
-	"peerDependencies": {
-		"typescript": "^5.0.0"
-	},
 	"files": [
 		"dist",
 		"/types.d.ts"
