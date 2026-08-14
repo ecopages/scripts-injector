@@ -1,5 +1,5 @@
 const child = document.getElementById('demo-nested-child');
 if (child) {
 	child.textContent = 'Child Active!';
-	child.className = 'button button--primary shadow-lg';
+	child.className = 'rui-button rui-button--filled rui-button--md shadow-control';
 }

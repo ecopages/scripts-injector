@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const port = Number(process.env.E2E_PORT ?? 3001);
+const baseURL = `http://localhost:${port}`;
+
 export default defineConfig({
 	testDir: './e2e',
 	fullyParallel: true,
@@ -8,7 +11,7 @@ export default defineConfig({
 	workers: process.env.CI ? 1 : undefined,
 	reporter: 'list',
 	use: {
-		baseURL: 'http://localhost:3000',
+		baseURL,
 		trace: 'on-first-retry',
 	},
 	projects: [
@@ -18,9 +21,9 @@ export default defineConfig({
 		},
 	],
 	webServer: {
-		command: 'cd apps/www && bun run dev --port 3000',
-		url: 'http://localhost:3000',
-		reuseExistingServer: !process.env.CI,
+		command: `cd apps/www && bun run dev --port ${port}`,
+		url: baseURL,
+		reuseExistingServer: false,
 		stdout: 'pipe',
 		stderr: 'pipe',
 		timeout: 120 * 1000,

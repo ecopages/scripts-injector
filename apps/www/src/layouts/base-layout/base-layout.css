@@ -1,30 +1,37 @@
 @layer components {
 	.header {
-		@apply sticky top-0 z-50 w-full;
-		@apply bg-background-accent border-b border-border;
+		@apply sticky top-0 z-10 w-full border-b border-border bg-background;
 
 		&__inner {
-			@apply h-16 px-6 md:px-8 py-3 max-w-7xl w-full mx-auto flex items-center justify-between;
+			@apply mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6 py-3 md:px-8;
 
 			&-left {
-				@apply flex items-center gap-4;
+				@apply flex items-center gap-3;
 
 				.version {
-					@apply m-0 text-[10px] font-heading font-medium leading-none tracking-tight bg-background text-on-background/90 px-2 py-0.5 rounded border border-border;
+					@apply font-mono;
 				}
 			}
 		}
 
 		&__nav {
-			@apply flex items-center gap-4;
+			@apply flex items-center gap-2;
 		}
 
 		&__link {
-			@apply text-sm inline-flex items-center justify-center text-on-background/60 no-underline transition-colors hover:text-on-background;
+			@apply inline-flex min-h-11 items-center justify-center px-2 text-sm text-on-surface no-underline;
+
+			@media (hover: hover) and (pointer: fine) {
+				@apply hover:text-on-background;
+			}
+
+			&:focus-visible {
+				@apply rounded-sm outline-2 outline-offset-2 outline-focus-ring;
+			}
 		}
 	}
 
 	.layout-main {
-		@apply w-full max-w-7xl mx-auto px-6 md:px-8 py-8 md:py-12 flex-1;
+		@apply mx-auto flex-1 w-full max-w-7xl px-6 py-8 md:px-8 md:py-12;
 	}
 }

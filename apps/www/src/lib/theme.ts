@@ -13,5 +13,5 @@ export function parseStoredPreference(value: string | null): ThemePreference | n
 	return null;
 }
 
-/** Inline script applied before paint to avoid theme flash. Keep in sync with ThemeToggle. */
+/** Inline script applied before paint to avoid a theme flash. Keep in sync with the app-shell cycle toggle. */
 export const themeBootstrapScript = `(function(){const s=localStorage.getItem('${THEME_STORAGE_KEY}');const p=window.matchMedia('(prefers-color-scheme: dark)').matches;const t=(s==='light'||s==='dark')?s:(p?'dark':'light');document.documentElement.setAttribute('data-theme',t);if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}})();`;

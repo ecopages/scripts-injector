@@ -76,7 +76,8 @@ test.describe('Home Page Script Injection', () => {
 
 		await expect(script).not.toBeAttached();
 
-		await select.selectOption('B');
+		await select.locator('[data-select-trigger]').click();
+		await select.locator('[data-value="B"]').click();
 
 		await expect(script).toBeAttached();
 		await expect(select).toHaveAttribute('data-script-loaded', 'true');

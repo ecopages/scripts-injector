@@ -1,8 +1,0 @@
-.theme-toggle {
-	@apply contents;
-}
-
-.theme-toggle button {
-	@apply items-center justify-center;
-	min-width: 6.5rem;
-}

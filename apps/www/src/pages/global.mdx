@@ -1,4 +1,5 @@
 import { eco } from '@ecopages/core';
+import { RuiAlert, RuiAlertDescription, RuiAlertTitle } from '@ecopages/radiant-ui/alert';
 import { ProseLayout } from '@/layouts/prose-layout/prose-layout';
 
 export const config = {
@@ -11,15 +12,14 @@ While the `<scripts-injector>` custom element provides a powerful declarative ap
 
 To accommodate these use cases, we provide the **Global Script Injector**.
 
-<div class="rounded-md border border-primary/30 bg-primary-container px-5 py-4 my-6">
-  <p class="m-0 text-sm font-bold text-on-primary-container">
-    <strong>Need a more straightforward approach?</strong>
-  </p>
-  <p class="m-0 mt-1 text-sm text-on-primary-container/80">
-    Use the Web Component with `scripts-injector` and declarative triggers.
-    <a href="/docs" class="ml-1 font-semibold text-link no-underline hover:underline">Read the main docs →</a>
-  </p>
-</div>
+<RuiAlert variant="info" layout="banner" class="unstyled">
+  <div>
+    <RuiAlertTitle>Need a more straightforward approach?</RuiAlertTitle>
+    <RuiAlertDescription>
+      Use the Web Component with <code>scripts-injector</code> and declarative triggers. <a href="/docs">Read the main docs →</a>
+    </RuiAlertDescription>
+  </div>
+</RuiAlert>
 
 <br />
 

@@ -1,7 +1,11 @@
 import { eco } from '@ecopages/core';
+import type { JsxRenderable } from '@ecopages/jsx';
+import { RuiButton } from '@ecopages/radiant-ui/button';
+import { RuiChip } from '@ecopages/radiant-ui/chip';
+import { RuiHeading, RuiHeadingDescription, RuiHeadingTitle } from '@ecopages/radiant-ui/heading';
+import { RuiInput } from '@ecopages/radiant-ui/input';
+import { RuiSelect } from '@ecopages/radiant-ui/select';
 import { BaseLayout } from '@/layouts/base-layout/base-layout';
-import { Footer } from '@/components/footer';
-import { Button } from '@/components/button';
 
 type InjectorTrigger = {
 	'on:idle'?: boolean;
@@ -17,300 +21,332 @@ const injectorAttrs = (scripts: string, trigger: InjectorTrigger, className?: st
 	...(className ? { class: className } : {}),
 });
 
-export default eco.page({
-	dependencies: {
-		stylesheets: ['./index.css'],
-		components: [BaseLayout, Footer],
+type ShowcaseSectionProps = {
+	title: string;
+	description: JsxRenderable;
+	trigger: string;
+	children: JsxRenderable;
+};
+
+const ShowcaseSection = ({ title, description, trigger, children }: ShowcaseSectionProps) => (
+	<section class="showcase-section">
+		<div class="showcase-info">
+			<RuiHeading size="md">
+				<RuiHeadingTitle>{title}</RuiHeadingTitle>
+				<RuiHeadingDescription>{description}</RuiHeadingDescription>
+			</RuiHeading>
+			<RuiChip variant="muted" class="showcase-tag">
+				{trigger}
+			</RuiChip>
+		</div>
+		<div class="showcase-demo">
+			<div class="showcase-demo-surface">{children}</div>
+		</div>
+	</section>
+);
+
+type HomeFooterLink = { label: string; href?: string; external?: boolean };
+type HomeFooterColumnData = { title: string; links: HomeFooterLink[] };
+
+const HOME_FOOTER_COLUMNS: HomeFooterColumnData[] = [
+	{
+		title: 'Ecosystem',
+		links: [
+			{ label: 'Ecopages', href: 'https://ecopages.app', external: true },
+			{ label: 'Radiant', href: 'https://radiant.ecopages.app', external: true },
+			{ label: 'Radiant UI', href: 'https://radiant-ui.ecopages.app', external: true },
+			{ label: 'Scripts Injector' },
+			{ label: 'Logger', href: 'https://github.com/ecopages/logger', external: true },
+		],
 	},
+	{
+		title: 'Docs',
+		links: [
+			{ label: 'Scripts Injector', href: '/docs' },
+			{ label: 'Global Injector', href: '/global' },
+		],
+	},
+	{
+		title: 'Packages',
+		links: [
+			{
+				label: '@ecopages/scripts-injector',
+				href: 'https://www.npmjs.com/package/@ecopages/scripts-injector',
+				external: true,
+			},
+			{ label: 'GitHub', href: 'https://github.com/ecopages/scripts-injector', external: true },
+		],
+	},
+];
+
+const HomeFooterColumn = ({ title, links }: HomeFooterColumnData) => (
+	<div class="home-footer__col">
+		<p class="home-footer__label">{title}</p>
+		<ul class="home-footer__list">
+			{links.map((link) => (
+				<li>
+					{link.href ? (
+						<a
+							href={link.href}
+							{...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+						>
+							{link.label}
+						</a>
+					) : (
+						<span aria-current="page">{link.label}</span>
+					)}
+				</li>
+			))}
+		</ul>
+	</div>
+);
+
+export default eco.page({
+	dependencies: { stylesheets: ['./index.css'], components: [BaseLayout] },
 	layout: BaseLayout,
-	render: () => {
-		return (
-			<div class="showcase">
-				<section class="showcase-hero">
-					<h1 class="showcase-hero__title">
+	render: () => (
+		<div class="showcase">
+			<section class="showcase-hero">
+				<RuiHeading align="center" size="xl" class="showcase-hero__heading">
+					<RuiHeadingTitle as="h1">
 						Orchestrate scripts.
 						<br />
 						<scripts-injector {...injectorAttrs('/scripts/accelerate.script.js', { 'on:idle': true })}>
-							<span class="accelerate-word text-accent">Accelerate your page.</span>
+							<span class="accelerate-word text-primary">Accelerate your page.</span>
 						</scripts-injector>
-					</h1>
-					<p class="showcase-hero__description">
+					</RuiHeadingTitle>
+					<RuiHeadingDescription>
 						Take full control of your scripts with a declarative approach. Inject what you need, exactly
 						when and where you need it.
-					</p>
-					<div class="showcase-hero__actions">
-						<Button href="/docs" variant="default">
-							<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 2 0 01.293.707V19a2 2 0 01-2 2z"
-								/>
-							</svg>
-							Documentation
-						</Button>
-					</div>
-				</section>
-
-				<div id="examples" class="showcase-examples">
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Lazy Interaction (Click)</h2>
-							<p class="section-desc">
-								Delays loading of heavy logic until the user actually clicks. The click event is
-								captured, the script loads, and then the click is replayed natively.
-							</p>
-							<span class="showcase-tag">on:interaction="click"</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface">
-								<div class="text-center">
-									<scripts-injector
-										{...injectorAttrs('/scripts/demo-click.js', { 'on:interaction': 'click' })}
-									>
-										<button id="demo-click-btn" class="button button--tonal">
-											Click to Launch
-										</button>
-									</scripts-injector>
-								</div>
-							</div>
-						</div>
-					</section>
-
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Anticipation (Hover)</h2>
-							<p class="section-desc">
-								Preloads resources when a user hovers, ensuring instant availability without waiting for
-								a click. Ideal for menus or tooltips.
-							</p>
-							<span class="showcase-tag">on:interaction="mouseenter"</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface">
-								<scripts-injector
-									{...injectorAttrs(
-										'/scripts/demo-hover.js',
-										{ 'on:interaction': 'mouseenter' },
-										'w-full max-w-md',
-									)}
-								>
-									<div
-										id="demo-hover-area"
-										class="h-32 border border-dashed border-border bg-background flex items-center justify-center text-on-background/70 text-sm font-medium cursor-pointer hover:border-on-background/40 hover:text-on-background transition-colors"
-									>
-										Hover me to load
-									</div>
-								</scripts-injector>
-							</div>
-						</div>
-					</section>
-
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Input Focus</h2>
-							<p class="section-desc">
-								Inject validation or input masks exactly when the user focuses on a field.
-							</p>
-							<span class="showcase-tag">on:interaction="focusin"</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface">
-								<scripts-injector
-									{...injectorAttrs(
-										'/scripts/demo-focus.js',
-										{ 'on:interaction': 'focusin' },
-										'w-full max-w-sm',
-									)}
-								>
-									<form class="space-y-4" onsubmit="return false">
-										<h3 class="font-heading font-semibold text-on-background mt-0">Search</h3>
-										<input
-											id="demo-focus-input"
-											type="text"
-											name="q"
-											placeholder="you@example.com"
-											class="input-field"
-											required
-										/>
-										<div id="demo-focus-feedback"></div>
-									</form>
-								</scripts-injector>
-							</div>
-						</div>
-					</section>
-
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Background (Idle)</h2>
-							<p class="section-desc">
-								Non-critical resources like analytics or logging can be loaded when the browser is idle,
-								preventing main-thread blocking during initial load.
-							</p>
-							<span class="showcase-tag">on:idle</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface">
-								<scripts-injector {...injectorAttrs('/scripts/demo-idle.js', { 'on:idle': true })}>
-									<div
-										id="demo-idle-badge"
-										class="px-4 py-1.5 border border-border bg-background text-muted-foreground text-sm font-medium transition-all duration-700 animate-pulse"
-									>
-										Waiting for Idle...
-									</div>
-								</scripts-injector>
-							</div>
-						</div>
-					</section>
-
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Form Interception</h2>
-							<p class="section-desc">
-								Inject validation or submission logic exactly when the user attempts to submit a form.
-							</p>
-							<span class="showcase-tag">on:interaction="submit"</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface">
-								<scripts-injector
-									{...injectorAttrs(
-										'/scripts/demo-form.js',
-										{ 'on:interaction': 'submit' },
-										'w-full max-w-sm',
-									)}
-								>
-									<form id="demo-form" class="space-y-4" onsubmit="return false">
-										<h3 class="font-heading font-semibold text-on-background mt-0">Newsletter</h3>
-										<input
-											type="email"
-											name="email"
-											placeholder="you@example.com"
-											class="input-field"
-											required
-										/>
-										<button type="submit" class="button button--primary w-full justify-center">
-											Subscribe
-										</button>
-										<div id="demo-form-feedback"></div>
-									</form>
-								</scripts-injector>
-							</div>
-						</div>
-					</section>
-
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Dynamic Selection</h2>
-							<p class="section-desc">Load dependent logic based on user choices from a dropdown menu.</p>
-							<span class="showcase-tag">on:interaction="change"</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface">
-								<div class="w-full max-w-xs">
-									<scripts-injector
-										{...injectorAttrs(
-											'/scripts/demo-select.js',
-											{ 'on:interaction': 'change' },
-											'w-full',
-										)}
-									>
-										<select id="demo-select" class="select-field" aria-label="Demo Selection">
-											<option value="">Select an option...</option>
-											<option value="A">Feature A</option>
-											<option value="B">Feature B</option>
-											<option value="C">Feature C</option>
-										</select>
-									</scripts-injector>
-									<div
-										id="demo-select-feedback"
-										class="mt-4 text-center h-4 font-semibold text-accent"
-									></div>
-								</div>
-							</div>
-						</div>
-					</section>
-
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Nested Composition</h2>
-							<p class="section-desc">
-								Injectors can be nested within each other. Parent and child loading logic remains
-								independent.
-							</p>
-							<span class="showcase-tag">Nested Components</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface">
-								<scripts-injector
-									{...injectorAttrs(
-										'/scripts/demo-nested-parent.js',
-										{ 'on:interaction': 'mouseenter' },
-										'contents',
-									)}
-								>
-									<div
-										id="demo-nested-parent"
-										class="p-8 border border-dashed border-border relative bg-background transition-colors w-full"
-									>
-										<span class="absolute top-0 right-0 border-b border-l border-border bg-background-accent text-on-background/70 text-xs font-mono px-2 py-1 uppercase tracking-wider">
-											Parent (Hover)
-										</span>
-
-										<div class="flex justify-center">
-											<scripts-injector
-												{...injectorAttrs('/scripts/demo-nested-child.js', {
-													'on:interaction': 'click',
-												})}
-											>
-												<button id="demo-nested-child" class="button button--tonal">
-													Child Button (Click)
-												</button>
-											</scripts-injector>
-										</div>
-									</div>
-								</scripts-injector>
-							</div>
-						</div>
-					</section>
-
-					<section class="showcase-section">
-						<div class="showcase-info">
-							<h2 class="section-title">Margin Visibility</h2>
-							<p class="section-desc">
-								Preload scripts <em>before</em> content enters the viewport to ensure zero CLS or delay
-								when the user arrives.
-							</p>
-							<span class="showcase-tag">on:visible="200px"</span>
-						</div>
-						<div class="showcase-demo">
-							<div class="showcase-demo-surface flex-col">
-								<div class="text-sm text-muted-foreground mb-8 italic">
-									Scroll container (simulated)
-								</div>
-								<div class="h-32"></div>
-								<scripts-injector
-									{...injectorAttrs(
-										'/scripts/demo-margin.js',
-										{ 'on:visible': '200px' },
-										'w-full max-w-lg',
-									)}
-								>
-									<div
-										id="demo-margin-box"
-										class="h-32 border border-border bg-background text-on-background text-sm font-medium flex items-center justify-center transition-colors w-full"
-									>
-										I load at 200px offset
-									</div>
-								</scripts-injector>
-							</div>
-						</div>
-					</section>
+					</RuiHeadingDescription>
+				</RuiHeading>
+				<div class="showcase-hero__actions">
+					<RuiButton href="/docs" size="lg">
+						<svg
+							aria-hidden="true"
+							width="20"
+							height="20"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							/>
+						</svg>
+						Documentation
+					</RuiButton>
 				</div>
+			</section>
 
-				<Footer />
+			<div id="examples" class="showcase-examples">
+				<ShowcaseSection
+					title="Lazy interaction"
+					description="Delays loading of heavy logic until the user clicks. The click is captured, the script loads, and then the browser replays it natively."
+					trigger={'on:interaction="click"'}
+				>
+					<scripts-injector {...injectorAttrs('/scripts/demo-click.js', { 'on:interaction': 'click' })}>
+						<RuiButton id="demo-click-btn" variant="outline">
+							Click to launch
+						</RuiButton>
+					</scripts-injector>
+				</ShowcaseSection>
+
+				<ShowcaseSection
+					title="Anticipation"
+					description="Preloads resources on hover or keyboard focus, keeping interactions ready without delaying the initial page."
+					trigger={'on:interaction="mouseenter,focusin"'}
+				>
+					<scripts-injector
+						{...injectorAttrs(
+							'/scripts/demo-hover.js',
+							{ 'on:interaction': 'mouseenter,focusin' },
+							'showcase-demo__wide',
+						)}
+					>
+						<button id="demo-hover-area" type="button" class="showcase-trigger">
+							Hover or focus to load
+						</button>
+					</scripts-injector>
+				</ShowcaseSection>
+
+				<ShowcaseSection
+					title="Input focus"
+					description="Inject validation or input masks exactly when a user focuses the field."
+					trigger={'on:interaction="focusin"'}
+				>
+					<scripts-injector
+						{...injectorAttrs(
+							'/scripts/demo-focus.js',
+							{ 'on:interaction': 'focusin' },
+							'showcase-demo__narrow',
+						)}
+					>
+						<form class="showcase-form" onsubmit="return false">
+							<h3>Search</h3>
+							<RuiInput
+								id="demo-focus-input"
+								type="search"
+								name="q"
+								placeholder="you@example.com"
+								autocomplete="off"
+								spellcheck={false}
+								required
+							/>
+							<div id="demo-focus-feedback" class="showcase-feedback" aria-live="polite"></div>
+						</form>
+					</scripts-injector>
+				</ShowcaseSection>
+
+				<ShowcaseSection
+					title="Background"
+					description="Loads non-critical resources such as analytics when the browser is idle, protecting initial-load responsiveness."
+					trigger="on:idle"
+				>
+					<scripts-injector {...injectorAttrs('/scripts/demo-idle.js', { 'on:idle': true })}>
+						<RuiChip id="demo-idle-badge" variant="muted" class="showcase-idle-badge">
+							Waiting for idle…
+						</RuiChip>
+					</scripts-injector>
+				</ShowcaseSection>
+
+				<ShowcaseSection
+					title="Form interception"
+					description="Inject validation or submission logic only when a user attempts to submit the form."
+					trigger={'on:interaction="submit"'}
+				>
+					<scripts-injector
+						{...injectorAttrs(
+							'/scripts/demo-form.js',
+							{ 'on:interaction': 'submit' },
+							'showcase-demo__narrow',
+						)}
+					>
+						<form id="demo-form" class="showcase-form" onsubmit="return false">
+							<h3>Newsletter</h3>
+							<RuiInput
+								type="email"
+								name="email"
+								placeholder="you@example.com"
+								autocomplete="email"
+								required
+							/>
+							<RuiButton type="submit" class="w-full">
+								Subscribe
+							</RuiButton>
+							<div id="demo-form-feedback" class="showcase-feedback" aria-live="polite"></div>
+						</form>
+					</scripts-injector>
+				</ShowcaseSection>
+
+				<ShowcaseSection
+					title="Dynamic selection"
+					description="Load dependent logic after a user chooses an option from a Radiant select."
+					trigger={'on:interaction="rui-change"'}
+				>
+					<div class="showcase-select">
+						<scripts-injector
+							{...injectorAttrs('/scripts/demo-select.js', { 'on:interaction': 'rui-change' }, 'w-full')}
+						>
+							<RuiSelect
+								id="demo-select"
+								aria-label="Demo selection"
+								placeholder="Select an option…"
+								options={[
+									{ value: 'A', label: 'Feature A' },
+									{ value: 'B', label: 'Feature B' },
+									{ value: 'C', label: 'Feature C' },
+								]}
+							/>
+						</scripts-injector>
+						<div
+							id="demo-select-feedback"
+							class="showcase-feedback showcase-feedback--center"
+							aria-live="polite"
+						></div>
+					</div>
+				</ShowcaseSection>
+
+				<ShowcaseSection
+					title="Nested composition"
+					description="Injectors can be nested while keeping the parent and child loading rules independent."
+					trigger="Nested components"
+				>
+					<scripts-injector
+						{...injectorAttrs(
+							'/scripts/demo-nested-parent.js',
+							{ 'on:interaction': 'mouseenter,focusin' },
+							'contents',
+						)}
+					>
+						<div id="demo-nested-parent" class="showcase-nested">
+							<RuiChip variant="muted" class="showcase-nested__label">
+								Parent · hover or focus
+							</RuiChip>
+							<scripts-injector
+								{...injectorAttrs('/scripts/demo-nested-child.js', { 'on:interaction': 'click' })}
+							>
+								<RuiButton id="demo-nested-child" variant="outline">
+									Child button · click
+								</RuiButton>
+							</scripts-injector>
+						</div>
+					</scripts-injector>
+				</ShowcaseSection>
+
+				<ShowcaseSection
+					title="Margin visibility"
+					description={
+						<>
+							Preload scripts <em>before</em> content enters the viewport so the interaction is ready when
+							users arrive.
+						</>
+					}
+					trigger={'on:visible="200px"'}
+				>
+					<div class="showcase-margin-demo">
+						<p>Scroll container (simulated)</p>
+						<div class="showcase-margin-demo__spacer"></div>
+						<scripts-injector
+							{...injectorAttrs(
+								'/scripts/demo-margin.js',
+								{ 'on:visible': '200px' },
+								'showcase-demo__wide',
+							)}
+						>
+							<div id="demo-margin-box" class="showcase-margin-box">
+								I load at 200px offset
+							</div>
+						</scripts-injector>
+					</div>
+				</ShowcaseSection>
 			</div>
-		);
-	},
+
+			<footer class="home-footer">
+				<nav class="home-footer__nav" aria-label="Ecopages ecosystem">
+					{HOME_FOOTER_COLUMNS.map((column) => (
+						<HomeFooterColumn title={column.title} links={column.links} />
+					))}
+				</nav>
+				<div class="home-footer__bar">
+					<p>
+						Created by{' '}
+						<a href="https://github.com/andeeplus" target="_blank" rel="noopener noreferrer">
+							andeeplus
+						</a>
+					</p>
+					<p>
+						Built with{' '}
+						<a href="https://github.com/ecopages/ecopages" target="_blank" rel="noopener noreferrer">
+							Ecopages
+						</a>{' '}
+						© {new Date().getFullYear()}
+					</p>
+				</div>
+			</footer>
+		</div>
+	),
 });
