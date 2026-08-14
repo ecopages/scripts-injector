@@ -1,5 +1,6 @@
 import { eco } from '@ecopages/core';
 import { RuiAlert, RuiAlertDescription, RuiAlertTitle } from '@ecopages/radiant-ui/alert';
+import { Footer } from '@/components/footer';
 import { ProseLayout } from '@/layouts/prose-layout/prose-layout';
 
 export const config = {
@@ -104,3 +105,5 @@ Behind the scenes, `initGlobalInjector` will:
 The Global Injector and `<scripts-injector>` can be used side-by-side seamlessly. Both implementations avoid duplicate `<script>` tag injection by checking existing scripts and tracking in-flight loads.
 
 If `<scripts-injector>` and `initGlobalInjector()` both try to lazy-load the same script URL, duplicate script injection is prevented and already-present scripts are reused.
+
+<Footer currentPage="global" />

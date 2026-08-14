@@ -1,0 +1,43 @@
+@layer components {
+	.site-footer {
+		@apply mt-6 flex flex-col gap-5 border-t border-border pt-6 text-sm text-on-surface;
+	}
+
+	.site-footer__nav {
+		@apply grid gap-6 sm:grid-cols-2 lg:grid-cols-3;
+	}
+
+	.site-footer__label {
+		@apply m-0 text-xs font-semibold uppercase tracking-wide text-on-surface;
+		opacity: var(--opacity-muted);
+	}
+
+	.site-footer__list {
+		@apply m-0 mt-1 flex list-none flex-col p-0;
+	}
+
+	.site-footer__list a,
+	.site-footer__bar a {
+		@apply inline-flex min-h-11 items-center text-sm text-on-surface no-underline underline-offset-4;
+
+		@media (hover: hover) and (pointer: fine) {
+			@apply hover:text-on-background hover:underline;
+		}
+
+		&:focus-visible {
+			@apply rounded-sm outline-2 outline-offset-2 outline-focus-ring;
+		}
+	}
+
+	.site-footer__list [aria-current='page'] {
+		@apply inline-flex min-h-11 items-center text-sm text-on-background;
+	}
+
+	.site-footer__bar {
+		@apply flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border pt-4;
+
+		p {
+			@apply m-0 flex flex-wrap items-center gap-x-1;
+		}
+	}
+}
