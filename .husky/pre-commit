@@ -1,1 +1,1 @@
-bun test:run && bun test:e2e && bun lint-staged
+pnpm test:run && pnpm test:e2e && pnpm exec lint-staged

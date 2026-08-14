@@ -7,13 +7,13 @@ This is the official demo and documentation site for `@ecopages/scripts-injector
 First, install the dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 Then, run the development server:
 
 ```bash
-bun dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -30,11 +30,11 @@ To learn more about Ecopages, take a look at the following resources:
 To build the application for production, run:
 
 ```bash
-bun run build
+pnpm build
 ```
 
 ## Preview
 
 ```bash
-bun preview
+pnpm preview
 ```

@@ -16,7 +16,7 @@ It supports two modes:
 ## Installation
 
 ```bash
-bun add @ecopages/scripts-injector
+npm install @ecopages/scripts-injector
 ```
 
 ## Canonical Imports

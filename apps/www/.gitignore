@@ -23,7 +23,6 @@ public/js
 **/*.tar.gz
 **/*.tgz
 **/*.log
-**/*.bun
 
 # tests
 test-results
