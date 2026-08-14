@@ -5,7 +5,7 @@ if (btn) {
 	btn.setAttribute('data-script-loaded', 'true');
 
 	const particle = document.createElement('div');
-	particle.className = 'absolute -top-2 -right-2 h-4 w-4 rounded-full bg-primary animate-ping';
+	particle.className = 'absolute -top-2 -right-2 h-4 w-4 rounded-full bg-warning animate-ping';
 	btn.style.position = 'relative';
 	btn.appendChild(particle);
 }
