@@ -44,7 +44,7 @@ export const Footer = eco.component<FooterProps>({
 		stylesheets: ['./footer.css'],
 	},
 	render: ({ currentPage }) => (
-		<footer class="site-footer">
+		<footer class="site-footer unstyled">
 			<nav class="site-footer__nav" aria-label="Ecopages ecosystem">
 				{FOOTER_COLUMNS.map((column) => (
 					<div class="site-footer__col">
