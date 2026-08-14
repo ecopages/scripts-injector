@@ -1,24 +1,25 @@
 {
 	"name": "scripts-injector",
+	"packageManager": "pnpm@11.17.0",
 	"module": "index.ts",
 	"type": "module",
 	"publishConfig": {
 		"access": "public"
 	},
 	"scripts": {
-		"clean": "rm -rf .eco node_modules bun.lockb && bun install && bun run build:all",
+		"clean": "rm -rf .eco node_modules && pnpm install --frozen-lockfile && pnpm run build:all",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
-		"format": "bunx prettier --write .",
-		"build:all": "bun run --filter '*' build:lib",
+		"format": "pnpm exec prettier --write .",
+		"build:all": "pnpm -r --if-present run build:lib",
 		"changeset": "changeset",
 		"version": "changeset version",
-		"prerelease": "bun run build:all",
+		"prerelease": "pnpm run build:all",
 		"release": "changeset publish",
-		"test:run": "bun run --filter '*' test:run",
+		"test:run": "pnpm -r --if-present run test:run",
 		"test:e2e": "playwright test",
-		"dev:www": "bun run --filter 'www' dev",
-		"build:www": "bun run --filter 'www' build",
+		"dev:www": "pnpm --filter www dev",
+		"build:www": "pnpm --filter www build",
 		"prepare": "husky"
 	},
 	"peerDependencies": {
@@ -28,7 +29,6 @@
 		"@changesets/changelog-github": "^0.5.0",
 		"@changesets/cli": "^2.27.5",
 		"@playwright/test": "^1.58.1",
-		"@types/bun": "latest",
 		"husky": "^9.0.10",
 		"lint-staged": "^15.2.2",
 		"oxlint": "latest",

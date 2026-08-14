@@ -20,21 +20,21 @@ jobs:
             - name: Checkout Repo
               uses: actions/checkout@v4
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v1
-
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
                   node-version: '24'
                   registry-url: 'https://registry.npmjs.org'
 
+            - name: Enable Corepack
+              run: corepack enable
+
             - name: Install Dependencies
 
-              run: bun install --frozen-lockfile
+              run: pnpm install --frozen-lockfile
 
             - name: Build Libraries
-              run: bun run build:all
+              run: pnpm run build:all
 
             - name: Install Playwright Browsers
               run: npx playwright install --with-deps 
@@ -43,7 +43,7 @@ jobs:
               id: changesets
               uses: changesets/action@v1
               with:
-                  version: bun run version
+                  version: pnpm run version
                   publish: npm publish --provenance --access public --workspace packages/scripts-injector
               env:
                   GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}

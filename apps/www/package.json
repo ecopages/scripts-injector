@@ -1,6 +1,7 @@
 {
 	"name": "www",
 	"private": true,
+	"type": "module",
 	"scripts": {
 		"start": "ecopages start",
 		"dev": "ecopages dev",
@@ -10,20 +11,21 @@
 	},
 	"devDependencies": {
 		"@ecopages/core": "0.2.0-rc.0",
-		"@ecopages/image-processor": "0.2.0-rc.0",
 		"@ecopages/ecopages-jsx": "0.2.0-rc.0",
+		"@ecopages/image-processor": "0.2.0-rc.0",
 		"@ecopages/jsx": "0.3.0-rc.0",
-		"@ecopages/lit": "0.2.0-rc.0",
 		"@ecopages/postcss-processor": "0.2.0-rc.0",
 		"@ecopages/radiant": "0.3.0-rc.0",
 		"@ecopages/radiant-ui": "0.1.0-rc.0",
-		"@ecopages/signals": "0.3.0-rc.0",
 		"@ecopages/scripts-injector": "workspace:*",
+		"@ecopages/signals": "0.3.0-rc.0",
 		"@tailwindcss/postcss": "^4.0.0",
-		"@types/bun": "latest",
 		"ecopages": "0.2.0-rc.0",
 		"rehype-pretty-code": "^0.14.1",
 		"remark-gfm": "^4.0.1",
-		"tailwindcss": "^4.0.0"
+		"shiki": "^3.23.0",
+		"tailwindcss": "^4.0.0",
+		"typescript": "^5.9.3",
+		"unist-util-visit": "^5.1.0"
 	}
 }

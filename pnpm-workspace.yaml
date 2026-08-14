@@ -1,0 +1,21 @@
+packages:
+  - apps/*
+  - packages/*
+autoInstallPeers: false
+peerDependencyRules:
+  ignoreMissing:
+    - bun-types
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@ecopages/core@0.2.0-rc.0'
+  - '@ecopages/ecopages-jsx@0.2.0-rc.0'
+  - '@ecopages/file-system@0.2.0-rc.0'
+  - '@ecopages/image-processor@0.2.0-rc.0'
+  - '@ecopages/jsx@0.3.0-rc.0'
+  - '@ecopages/mdx@0.2.0-rc.0'
+  - '@ecopages/postcss-processor@0.2.0-rc.0'
+  - '@ecopages/radiant-ui@0.1.0-rc.0'
+  - '@ecopages/radiant@0.3.0-rc.0'
+  - '@ecopages/signals@0.3.0-rc.0'
+  - ecopages@0.2.0-rc.0

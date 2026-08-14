@@ -1,4 +1,4 @@
 {
-	"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx}": ["bun run lint:fix"],
-	"*.{json,jsonc}": ["bunx prettier --write"]
+	"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx}": ["pnpm run lint:fix"],
+	"*.{json,jsonc}": ["pnpm exec prettier --write"]
 }

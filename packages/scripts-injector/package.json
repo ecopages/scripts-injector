@@ -25,15 +25,16 @@
 		"./types": "./types.d.ts"
 	},
 	"scripts": {
-		"build:lib": "rm -rf dist && bun build --entry scripts-injector.ts --entry global-injector.ts --outdir dist --minify",
-		"prepack": "bun run build:lib",
+		"build:lib": "node build.mjs",
+		"prepack": "pnpm run build:lib",
 		"test": "vitest",
 		"test:run": "vitest run"
 	},
 	"devDependencies": {
 		"@testing-library/dom": "^10.4.1",
-		"@types/bun": "latest",
 		"@vitest/browser-playwright": "^4.0.16",
+		"esbuild": "^0.27.0",
+		"typescript": "^5.9.3",
 		"vitest": "^4.0.16"
 	},
 	"files": [

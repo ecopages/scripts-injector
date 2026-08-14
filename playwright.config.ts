@@ -21,7 +21,7 @@ export default defineConfig({
 		},
 	],
 	webServer: {
-		command: `cd apps/www && bun run dev --port ${port}`,
+		command: `pnpm --dir apps/www dev --port ${port}`,
 		url: baseURL,
 		reuseExistingServer: false,
 		stdout: 'pipe',
