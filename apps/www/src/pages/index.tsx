@@ -47,7 +47,7 @@ const ShowcaseSection = ({ title, description, trigger, children }: ShowcaseSect
 );
 
 export default eco.page({
-	dependencies: { stylesheets: ['./index.css'], components: [BaseLayout, Footer] },
+	dependencies: { stylesheets: ['./index.css'], components: [Footer] },
 	layout: BaseLayout,
 	render: () => (
 		<div class="showcase">
