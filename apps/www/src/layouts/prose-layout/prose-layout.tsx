@@ -1,9 +1,10 @@
 import { eco } from '@ecopages/core';
+import { Footer } from '@/components/footer';
 import { BaseLayout } from '@/layouts/base-layout/base-layout';
 
 export const ProseLayout = eco.component({
 	dependencies: {
-		components: [BaseLayout],
+		components: [BaseLayout, Footer],
 	},
 	render: ({ children, class: className }) => {
 		return (
