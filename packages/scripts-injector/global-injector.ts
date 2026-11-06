@@ -9,58 +9,7 @@
  */
 
 import type { GlobalInjectorMapConfig, TriggerSpecificConfig } from './types';
-import { ScriptInjectorEvents } from './utils';
-
-/**
- * In-flight loading promises keyed by script URL.
- *
- * Shared across all `loadScript` calls so that concurrent requests for the same
- * URL return the same promise rather than spawning multiple `<script>` tags.
- */
-const loadingScripts = new Map<string, Promise<void>>();
-
-/**
- * Returns `true` when a `<script src="...">` tag for the given URL already exists
- * anywhere in the document — including tags injected by other means.
- */
-function scriptExists(url: string): boolean {
-	return document.querySelector(`script[src="${url}"]`) !== null;
-}
-
-/**
- * Appends a `<script type="module">` tag for `url` and returns a promise that
- * settles when the browser signals load or error.
- *
- * @remarks
- * Returns immediately if the script is already present in the DOM.
- * Deduplicates concurrent calls for the same URL by reusing the pending promise
- * stored in `loadingScripts`; the entry is deleted once the promise settles.
- */
-function loadScript(url: string): Promise<void> {
-	if (scriptExists(url)) return Promise.resolve();
-
-	const existing = loadingScripts.get(url);
-	if (existing) return existing;
-
-	const promise = new Promise<void>((resolve, reject) => {
-		const script = document.createElement('script');
-		script.src = url;
-		script.type = 'module';
-		script.async = true;
-		script.onload = () => {
-			loadingScripts.delete(url);
-			resolve();
-		};
-		script.onerror = (event) => {
-			loadingScripts.delete(url);
-			reject(event);
-		};
-		document.head.appendChild(script);
-	});
-
-	loadingScripts.set(url, promise);
-	return promise;
-}
+import { cloneEvent, isScriptLoaded, loadScript, ScriptInjectorEvents } from './utils';
 
 /**
  * Merges all `<script type="ecopages/global-injector-map">` tags found in the document
@@ -106,13 +55,11 @@ async function loadRuleScripts(element: Element, rule: TriggerSpecificConfig, re
 	element.setAttribute('data-load-reason', reason);
 
 	/**
-	 * Mark a URL as loaded when its settle result is `fulfilled`, or when the
-	 * `<script>` tag is already present in the DOM. The second condition covers
-	 * scripts that were injected externally between the time this call started
-	 * and when the promise settled (pre-existing tags, parallel injectors, etc.).
+	 * Mark a URL as loaded when its load promise fulfilled or its tag has settled
+	 * (a failed tag stays in the document and is not retried).
 	 */
 	for (let i = 0; i < scriptsToLoad.length; i++) {
-		if (results[i].status === 'fulfilled' || scriptExists(scriptsToLoad[i])) {
+		if (results[i].status === 'fulfilled' || isScriptLoaded(scriptsToLoad[i])) {
 			loadedScripts.add(scriptsToLoad[i]);
 		} else {
 			failedScripts.push(scriptsToLoad[i]);
@@ -193,6 +140,17 @@ export function initGlobalInjector(): GlobalInjectorHandle {
 	 */
 	const interactionListeners = new WeakMap<Element, { eventType: string; listener: EventListener }[]>();
 	const intersectionObservers: IntersectionObserver[] = [];
+
+	/**
+	 * Records `urls` in the element's `data-loaded-scripts` and sets `data-loaded`
+	 * once every script referenced by the trigger is recorded.
+	 */
+	const recordLoaded = (element: Element, urls: string[], allEntryScripts: string[]): void => {
+		const loaded = new Set((element.getAttribute('data-loaded-scripts') ?? '').split(',').filter(Boolean));
+		for (const url of urls) loaded.add(url);
+		element.setAttribute('data-loaded-scripts', Array.from(loaded).join(','));
+		if (allEntryScripts.every((url) => loaded.has(url))) element.setAttribute('data-loaded', '');
+	};
 
 	const unbindTrigger = (element: Element): void => {
 		const boundListeners = interactionListeners.get(element) ?? [];
@@ -331,26 +289,38 @@ export function initGlobalInjector(): GlobalInjectorHandle {
 
 				for (const eventType of eventTypes) {
 					const listener: EventListener = async (event) => {
+						const removeListeners = (): void => {
+							const bound = interactionListeners.get(element) ?? [];
+							for (const { eventType: et, listener: l } of bound) {
+								element.removeEventListener(et, l, true);
+							}
+							interactionListeners.delete(element);
+						};
+
 						/**
-						 * Bail out early if every script for this rule is already recorded
-						 * in `data-loaded-scripts`. This prevents redundant network requests
-						 * when the element receives repeated events after the initial load.
+						 * If every script for this rule is already loaded in the document
+						 * (for example by another trigger sharing the same id), record it,
+						 * stop listening and let the event through untouched.
 						 */
-						const loadedScriptsAttr = element.getAttribute('data-loaded-scripts') ?? '';
-						const loadedScripts = new Set(loadedScriptsAttr.split(',').filter(Boolean));
-						if (rule.scripts.every((url) => loadedScripts.has(url))) return;
+						if (rule.scripts.every(isScriptLoaded)) {
+							recordLoaded(element, rule.scripts, allEntryScripts);
+							removeListeners();
+							return;
+						}
 
 						event.stopImmediatePropagation();
 						event.preventDefault();
 
+						/**
+						 * Read the real target now: `composedPath()` is empty once dispatch
+						 * finishes. Preferred over `event.target` because inside a shadow DOM
+						 * `event.target` is the shadow host.
+						 */
+						const originalTarget = event.composedPath?.()[0] ?? event.target;
+						const replayEvent = cloneEvent(event);
+
 						await loadRuleScripts(element, rule, `interaction:${event.type}`);
 
-						/**
-						 * After the current rule's scripts have loaded, re-read
-						 * `data-loaded-scripts` and check whether every script across
-						 * all rules for this trigger is now present. Only then is the
-						 * element considered fully loaded and `data-loaded` is set.
-						 */
 						const updatedAttr = element.getAttribute('data-loaded-scripts') ?? '';
 						const updatedLoaded = new Set(updatedAttr.split(',').filter(Boolean));
 						if (allEntryScripts.every((url) => updatedLoaded.has(url))) {
@@ -358,37 +328,19 @@ export function initGlobalInjector(): GlobalInjectorHandle {
 						}
 
 						/**
-						 * Remove every capture listener that was registered for this
-						 * element. Without this step the listener would intercept the
-						 * replayed event below and trigger a second (no-op but disruptive)
-						 * load cycle, causing the page to become temporarily unresponsive.
+						 * Remove the capture listeners before replaying, otherwise the
+						 * replayed event would be intercepted again.
 						 */
-						const bound = interactionListeners.get(element) ?? [];
-						for (const { eventType: et, listener: l } of bound) {
-							element.removeEventListener(et, l, true);
-						}
-						interactionListeners.delete(element);
+						removeListeners();
 
 						/**
-						 * Replay the original interaction on the element that the user
-						 * actually targeted, now that the required scripts are loaded.
-						 *
-						 * `event.composedPath()[0]` is preferred over `event.target` because
-						 * inside a shadow DOM (e.g. a Lit custom element) `event.target`
-						 * resolves to the shadow host while `composedPath()[0]` resolves to
-						 * the actual inner element — which is what the user clicked.
+						 * Replay on the element the user actually targeted. Clicks use
+						 * `.click()` so default actions such as navigation still run.
 						 */
-						const originalTarget =
-							typeof event.composedPath === 'function'
-								? (event.composedPath()[0] as Element | null)
-								: null;
-
-						if (event.type === 'click') {
-							if (originalTarget instanceof HTMLElement && originalTarget !== element) {
-								originalTarget.click();
-							} else if (event.target instanceof HTMLElement && event.target !== element) {
-								(event.target as HTMLElement).click();
-							}
+						if (event.type === 'click' && originalTarget instanceof HTMLElement) {
+							originalTarget.click();
+						} else {
+							originalTarget?.dispatchEvent(replayEvent);
 						}
 					};
 

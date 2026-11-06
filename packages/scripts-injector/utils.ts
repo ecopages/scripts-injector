@@ -4,20 +4,8 @@
  *
  * This module provides logic for loading scripts gracefully, intercepting
  * and cloning events robustly, and safely managing race conditions
- * using a single global Script `Set` for deduplication.
+ * using the script tags themselves (and a per-bundle in-flight map) for deduplication.
  */
-
-/**
- * Static set tracking scripts currently being loaded across all instances.
- * Prevents race conditions when multiple injectors try to load the same script simultaneously.
- *
- * @remarks
- * Scripts are added to this set before loading begins and removed in a `finally` block
- * after `Promise.allSettled` completes, ensuring cleanup occurs even if an error is thrown
- * during result processing. This prevents memory leaks where script URLs could otherwise
- * remain in the set indefinitely, blocking future load attempts.
- */
-export const scriptsInFlight = new Set<string>();
 
 /**
  * Events dispatched by the ScriptsInjector custom element and global script tracker.
@@ -140,46 +128,116 @@ export function cloneEvent(event: Event): Event {
 }
 
 /**
- * Checks if a script with the given URL already exists in the document.
- *
- * @param scriptUrl - The script URL to check
- * @returns `true` if a script with this src already exists, `false` otherwise
+ * Attribute set on every `<script>` tag injected by this package.
+ * Tags without it (SSR output, other loaders) are treated as already loaded.
  */
-export function isScriptLoaded(scriptUrl: string): boolean {
-	return document.querySelector(`script[src="${scriptUrl}"]`) !== null;
+const INJECTED_ATTR = 'data-eco-injected';
+
+/**
+ * Attribute set on an injected `<script>` tag once its `load` event has fired.
+ * Lives on the DOM so that the separately bundled custom element and global
+ * injector can see each other's progress.
+ */
+const LOADED_ATTR = 'data-eco-loaded';
+
+/**
+ * Attribute set on an injected `<script>` tag whose `error` event fired. The tag
+ * is kept (as before) and counts as settled, so failures are not retried or swallowed.
+ */
+const FAILED_ATTR = 'data-eco-failed';
+
+/**
+ * Pending load promises keyed by URL, for scripts injected by this bundle.
+ */
+const loadingScripts = new Map<string, Promise<void>>();
+
+/**
+ * Finds a `<script src>` element by its raw `src` attribute value.
+ * Iterates instead of using an attribute selector so URLs need no escaping, and
+ * also matches the resolved URL so `/x.js` and its absolute form find the same tag.
+ */
+function findScript(scriptUrl: string): HTMLScriptElement | null {
+	let resolved: string | null = null;
+	try {
+		resolved = new URL(scriptUrl, document.baseURI).href;
+	} catch {}
+	for (const script of Array.from(document.scripts)) {
+		if (script.getAttribute('src') === scriptUrl || (resolved !== null && script.src === resolved)) return script;
+	}
+	return null;
 }
 
 /**
- * Creates and appends a script element for the given URL.
+ * Checks whether the script with the given URL is loaded in the document.
+ *
+ * @param scriptUrl - The script URL to check
+ * @returns `true` when a matching tag exists and either was not injected by this
+ * package (pre-existing tag) or has settled (loaded, or failed). `false` when there is no
+ * tag, or when an injected tag is still in flight.
+ */
+export function isScriptLoaded(scriptUrl: string): boolean {
+	const script = findScript(scriptUrl);
+	if (!script) return false;
+	return (
+		!script.hasAttribute(INJECTED_ATTR) || script.hasAttribute(LOADED_ATTR) || script.hasAttribute(FAILED_ATTR)
+	);
+}
+
+/**
+ * Resolves when an already-injected, still-loading tag fires `load`; rejects on `error`.
+ */
+function waitForScript(script: HTMLScriptElement): Promise<void> {
+	return new Promise((resolve, reject) => {
+		script.addEventListener('load', () => resolve(), { once: true });
+		script.addEventListener('error', (event) => reject(event), { once: true });
+	});
+}
+
+/**
+ * Loads a script as an ES module and resolves once it is loaded.
  *
  * @param scriptToLoad - The URL of the script to load
- * @returns Promise that resolves when the script is loaded
  *
  * @remarks
- * Scripts are loaded as ES modules (`type="module"`) with async loading enabled.
- * Error handling is provided via the script's onerror event.
- *
- * Includes a double-check before appending to prevent race conditions
- * if another injector loaded the script during the async wait.
+ * - Already loaded (see {@link isScriptLoaded}): resolves immediately.
+ * - Tag present but still loading (injected by another trigger or bundle): waits
+ *   for that tag's `load`/`error` instead of resolving early.
+ * - Otherwise injects a `<script type="module" async>` tagged with
+ *   `data-eco-injected`, adds `data-eco-loaded` on load and `data-eco-failed`
+ *   on error. A failed tag stays in the document and is not retried.
+ * - Concurrent calls for the same URL share one promise.
  */
 export function loadScript(scriptToLoad: string): Promise<void> {
-	return new Promise((resolve, reject) => {
-		if (isScriptLoaded(scriptToLoad)) {
-			resolve();
-			return;
-		}
+	const existing = findScript(scriptToLoad);
+	if (existing) {
+		return isScriptLoaded(scriptToLoad) ? Promise.resolve() : waitForScript(existing);
+	}
 
+	const pending = loadingScripts.get(scriptToLoad);
+	if (pending) return pending;
+
+	const promise = new Promise<void>((resolve, reject) => {
 		const script = document.createElement('script');
 		script.src = scriptToLoad;
 		script.type = 'module';
 		script.async = true;
+		script.setAttribute(INJECTED_ATTR, '');
 
-		script.onload = () => resolve();
+		script.onload = () => {
+			script.setAttribute(LOADED_ATTR, '');
+			resolve();
+		};
 		script.onerror = (error) => {
+			script.setAttribute(FAILED_ATTR, '');
 			console.error(`[scripts-injector] Failed to load script: ${scriptToLoad}`, error);
 			reject(error);
 		};
 
 		document.head.appendChild(script);
+	}).finally(() => {
+		loadingScripts.delete(scriptToLoad);
 	});
+
+	loadingScripts.set(scriptToLoad, promise);
+	return promise;
 }

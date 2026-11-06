@@ -339,5 +339,104 @@ describe('Global Injector', () => {
 			expect(detail.loadedScripts).toContain('/global-click.js');
 		});
 	});
+
+	describe('shared trigger ids and replay', () => {
+		const SRC = '/fixtures/noop.js?global-shared';
+
+		beforeEach(() => {
+			addMapScript(
+				{
+					'shared-trigger': {
+						'on:interaction': { value: 'click,keydown', scripts: [SRC] },
+					},
+				},
+				container,
+			);
+		});
+
+		afterEach(() => {
+			document.querySelectorAll('script[src^="/fixtures/"]').forEach((el) => el.remove());
+		});
+
+		function addTrigger(tag: 'div' | 'button' = 'div'): { trigger: HTMLElement; button: HTMLElement } {
+			const trigger = document.createElement(tag);
+			trigger.setAttribute('data-eco-trigger', 'shared-trigger');
+			let button = trigger;
+			if (tag === 'div') {
+				button = document.createElement('button');
+				trigger.appendChild(button);
+			}
+			container.appendChild(trigger);
+			return { trigger, button };
+		}
+
+		const keydown = () => new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+
+		it('lets the first event of a second trigger through once the script is loaded', async () => {
+			handle = initGlobalInjector();
+			const first = addTrigger();
+			const second = addTrigger();
+			handle.refresh();
+
+			first.button.click();
+			await waitFor(() => expect(first.trigger.hasAttribute('data-loaded')).toBe(true));
+
+			const received: Event[] = [];
+			second.button.addEventListener('keydown', (e) => received.push(e));
+			const event = keydown();
+			second.button.dispatchEvent(event);
+
+			expect(received).toEqual([event]);
+			expect(event.defaultPrevented).toBe(false);
+			expect(second.trigger.getAttribute('data-loaded-scripts')).toBe(SRC);
+			expect(second.trigger.hasAttribute('data-loaded')).toBe(true);
+		});
+
+		it('replays the first click when the target is the trigger element itself', async () => {
+			handle = initGlobalInjector();
+			const { trigger } = addTrigger('button');
+			handle.refresh();
+
+			const onClick = vi.fn();
+			trigger.addEventListener('click', onClick);
+			trigger.click();
+
+			await waitFor(() => expect(onClick).toHaveBeenCalledTimes(1));
+		});
+
+		it('replays a keydown that triggered the load to the inner target', async () => {
+			handle = initGlobalInjector();
+			const { button } = addTrigger();
+			handle.refresh();
+
+			const onKeydown = vi.fn();
+			button.addEventListener('keydown', onKeydown);
+			button.dispatchEvent(keydown());
+
+			expect(onKeydown).not.toHaveBeenCalled();
+			await waitFor(() => expect(onKeydown).toHaveBeenCalledTimes(1));
+			expect((onKeydown.mock.calls[0][0] as KeyboardEvent).key).toBe('Enter');
+		});
+
+		it('holds an event fired while the script is still loading and replays it after load', async () => {
+			handle = initGlobalInjector();
+			const first = addTrigger();
+			const second = addTrigger();
+			handle.refresh();
+
+			const loadedWhenReceived: boolean[] = [];
+			second.button.addEventListener('click', () => {
+				const tag = document.querySelector(`script[src="${SRC}"]`);
+				loadedWhenReceived.push(tag?.hasAttribute('data-eco-loaded') ?? false);
+			});
+
+			first.button.click();
+			second.button.click();
+			await Promise.resolve();
+			expect(loadedWhenReceived).toEqual([]);
+
+			await waitFor(() => expect(loadedWhenReceived).toEqual([true]));
+		});
+	});
 });
 
