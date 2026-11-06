@@ -92,6 +92,8 @@ injector.cleanup();
 - `refresh()` — re-parse all global maps and bind any unbound elements with `data-eco-trigger`
 - `cleanup()` — disconnect observers and disable further refresh work for that instance
 
+An `on:interaction` event that triggers a load is held and replayed once the scripts have loaded. A click is replayed with `.click()` and any other event as a clone, on the inner element the user targeted, including the trigger element itself. When the scripts are already loaded, for example by another element with the same trigger id, the event passes through untouched.
+
 ## Props
 
 The ScriptInjectorProps type defines the properties that can be used to control the behavior of the scripts-injector custom element. Here are the available properties:
@@ -118,7 +120,24 @@ For all interaction events, the Scripts Injector intercepts the initial event, p
 
 ### Race Condition Prevention
 
-Multiple script injectors requesting the same script will coordinate to prevent duplicate loading. A static registry tracks scripts currently being loaded, ensuring only one network request is made even when multiple injectors trigger simultaneously.
+Multiple injectors requesting the same script coordinate so the script is fetched once, even when they trigger at the same moment. Coordination happens through the `<script>` tags themselves, so it also works between `<scripts-injector>` and the Global Injector, which ship as separate bundles:
+
+- Every tag the injector adds gets `data-eco-injected`, then `data-eco-loaded` when it loads or `data-eco-failed` when it fails. A failed script is not retried.
+- A tag that is still loading is waited on, not treated as loaded. An interaction that arrives meanwhile is held and replayed once the script has loaded.
+- A `<script src>` already in the page that the injector did not add, such as server-rendered output, counts as loaded.
+- Once every script for an interaction is loaded, later events on any element that uses those scripts pass through untouched: they are not intercepted, prevented or replayed.
+
+### Trusted Types
+
+The injector assigns script URLs to `script.src` as plain strings. If your CSP enforces `require-trusted-types-for 'script'`, define a [`default` policy](https://developer.mozilla.org/en-US/docs/Web/API/Trusted_Types_API#the_default_policy) so those assignments are allowed, and decide there which URLs to trust:
+
+```ts
+trustedTypes.createPolicy('default', {
+  createScriptURL: (url) => url, // replace with your own allowlist
+});
+```
+
+The CSP must then allow the name, for example `trusted-types default`.
 
 ### Load Reason Tracking
 

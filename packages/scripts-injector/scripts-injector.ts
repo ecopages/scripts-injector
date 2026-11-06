@@ -1,5 +1,5 @@
 import type { Conditions, InjectorMapConfig, OnDataLoadedEvent } from './types';
-import { cloneEvent, isScriptLoaded, loadScript, ScriptInjectorEvents, scriptsInFlight } from './utils';
+import { cloneEvent, isScriptLoaded, loadScript, ScriptInjectorEvents } from './utils';
 
 /**
  * The available loading condition types for the scripts-injector element.
@@ -286,21 +286,32 @@ export class ScriptsInjector extends HTMLElement {
 	 * For other events, clones and dispatches a new event with all properties.
 	 */
 	private async handleInteraction(event: Event, specificScripts?: string[]): Promise<void> {
+		/**
+		 * Everything this listener would load is already loaded: let the event
+		 * through untouched, recording completion when nothing else is pending.
+		 */
+		if ((specificScripts || this.scriptsToLoad).every((s) => isScriptLoaded(s))) {
+			if (this.scriptsToLoad.every((s) => isScriptLoaded(s))) this.markAllLoaded();
+			return;
+		}
+
 		event.stopImmediatePropagation();
 		event.preventDefault();
 
+		const target = event.target;
+
 		await this.loadScripts(`interaction:${event.type}`, specificScripts);
 
-		if (event.target === this) return;
+		if (target === this) return;
 
-		if (event.type === 'click' && event.target instanceof HTMLElement) {
-			event.target.click();
+		if (event.type === 'click' && target instanceof HTMLElement) {
+			target.click();
 			return;
 		}
 
 		const clonedEvent = cloneEvent(event);
 		if (clonedEvent) {
-			event.target?.dispatchEvent(clonedEvent);
+			target?.dispatchEvent(clonedEvent);
 		}
 	}
 
@@ -322,6 +333,14 @@ export class ScriptsInjector extends HTMLElement {
 			this.setAttribute('data-loaded', '');
 			this.unregisterEvents();
 		}
+	}
+
+	/**
+	 * Marks this element as fully loaded and removes its listeners and observers.
+	 */
+	private markAllLoaded(): void {
+		this.setAttribute('data-loaded', '');
+		this.unregisterEvents();
 	}
 
 	/**
@@ -366,24 +385,16 @@ export class ScriptsInjector extends HTMLElement {
 		const targetScripts = specificScripts || this.scriptsToLoad;
 
 		for (const script of targetScripts) {
-			if (!isScriptLoaded(script) && !scriptsInFlight.has(script)) {
-				scriptsInFlight.add(script);
+			if (!isScriptLoaded(script)) {
 				loadResults.push({ script, promise: loadScript(script) });
 			}
 		}
 
 		const results = await Promise.allSettled(loadResults.map((r) => r.promise));
 
-		try {
-			for (let i = 0; i < results.length; i++) {
-				const result = results[i];
-				if (result.status === 'rejected') {
-					this.failedScripts.push(loadResults[i].script);
-				}
-			}
-		} finally {
-			for (const { script } of loadResults) {
-				scriptsInFlight.delete(script);
+		for (let i = 0; i < results.length; i++) {
+			if (results[i].status === 'rejected') {
+				this.failedScripts.push(loadResults[i].script);
 			}
 		}
 
@@ -397,10 +408,8 @@ export class ScriptsInjector extends HTMLElement {
 			this.setAttribute('data-error', newErrors);
 		}
 
-		const allLoaded = this.scriptsToLoad.every((s) => isScriptLoaded(s));
-		if (allLoaded) {
-			this.setAttribute('data-loaded', '');
-			this.unregisterEvents();
+		if (this.scriptsToLoad.every((s) => isScriptLoaded(s))) {
+			this.markAllLoaded();
 		}
 
 		this.notifyInjectors(targetScripts);

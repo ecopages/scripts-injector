@@ -693,4 +693,36 @@ describe('ScriptsInjector', () => {
 			);
 		});
 	});
+
+	describe('already-loaded scripts', () => {
+		afterEach(() => {
+			document.querySelectorAll('script[src^="/fixtures/"]').forEach((el) => el.remove());
+		});
+
+		it('does not swallow an interaction once the scripts are loaded by another injector', async () => {
+			const src = '/fixtures/noop.js?element-shared';
+			const make = () => {
+				const el = document.createElement('scripts-injector') as ScriptsInjector;
+				el.setAttribute('scripts', src);
+				el.setAttribute('on:interaction', 'click,keydown');
+				const button = document.createElement('button');
+				el.appendChild(button);
+				container.appendChild(el);
+				return { el, button };
+			};
+			const first = make();
+			const second = make();
+
+			first.button.click();
+			await waitFor(() => expect(first.el.hasAttribute('data-loaded')).toBe(true));
+
+			const received: Event[] = [];
+			second.button.addEventListener('keydown', (e) => received.push(e));
+			const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+			second.button.dispatchEvent(event);
+
+			expect(received).toEqual([event]);
+			expect(event.defaultPrevented).toBe(false);
+		});
+	});
 });
