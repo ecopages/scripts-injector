@@ -96,14 +96,43 @@ Behind the scenes, `initGlobalInjector` will:
 2. Query the DOM for any `[data-eco-trigger]` elements.
 3. Observe the DOM for any newly added elements via a `MutationObserver`.
 4. Return a handle with `refresh()` and `cleanup()` so your framework controls lifecycle integration.
-5. Bind `on:idle`, `IntersectionObserver` (`on:visible`), and DOM event listeners (`on:interaction`) exactly like the Web Component does.
+5. Bind `on:idle`, `IntersectionObserver` (`on:visible`), and DOM event listeners (`on:interaction`), with the same loading and replay rules as the Web Component.
+
+<br />
+
+## Interaction Replay
+
+An `on:interaction` listener runs in the capture phase on the trigger element:
+
+- **Scripts not loaded yet:** the event is stopped and its default action prevented, the rule's scripts are loaded, and the event is replayed on the element the user actually targeted (`composedPath()[0]`, so this works inside shadow DOM). A `click` is replayed with `.click()`, so links and form submission still work. Any other event, including `keydown` and `keyup`, is replayed as a clone with its original properties. The trigger element itself can be the target.
+- **Scripts still loading** (started by another element): the event is held until the load finishes, then replayed.
+- **Scripts already loaded**, for example by another element with the same trigger id: the event passes through untouched, so the first Enter or click on a second instance works.
+
+The listeners are removed after the first load, so later events are never intercepted.
+
+<br />
+
+## Data Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `data-eco-bound` | Present once the element's listeners and observers are in place |
+| `data-eco-bound-trigger` | The trigger id the element is bound to; when `data-eco-trigger` changes, the element is rebound |
+| `data-loaded-scripts` | Comma-separated list of script URLs loaded for this element |
+| `data-loaded` | Present when every script referenced by the element's trigger has loaded (or failed) |
+| `data-load-reason` | What triggered the last load (`idle`, `visible`, `interaction:<event>`) |
+| `data-error` | Comma-separated list of script URLs that failed to load (only if errors occurred) |
 
 <br />
 
 ## Compatibility & Deduplication
 
-The Global Injector and `<scripts-injector>` can be used side-by-side seamlessly. Both implementations avoid duplicate `<script>` tag injection by checking existing scripts and tracking in-flight loads.
+The Global Injector and `<scripts-injector>` can be used side by side. They share their script loader and coordinate through the `<script>` tags themselves, so a script requested by both is fetched once, and a script that is still loading is waited on rather than treated as loaded.
 
-If `<scripts-injector>` and `initGlobalInjector()` both try to lazy-load the same script URL, duplicate script injection is prevented and already-present scripts are reused.
+<br />
+
+## Trusted Types
+
+Script URLs are assigned as plain strings. Pages that enforce `require-trusted-types-for 'script'` need a `default` policy; see Trusted Types in the [main docs](/docs).
 
 <Footer currentPage="global" />
