@@ -1,5 +1,11 @@
 # @ecopages/scripts-injector
 
+## 0.1.6
+
+### Patch Changes
+
+- [#7](https://github.com/ecopages/scripts-injector/pull/7) [`63168ce`](https://github.com/ecopages/scripts-injector/commit/63168ce1861796d7663af5b5fe89f5b40008d5cb) Thanks [@andeeplus](https://github.com/andeeplus)! - Global `on:interaction` no longer swallows the first activation of a second trigger that shares an id with an already loaded one. Events pass through untouched when the scripts are loaded, are held while a script is still loading, and are replayed after load (clicks via `.click()`, other events cloned, including keyboard events and targets that are the trigger element itself).
+
 ## 0.1.5
 
 ### Patch Changes
