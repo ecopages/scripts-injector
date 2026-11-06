@@ -184,3 +184,5 @@ packages/scripts-injector/utils.js
 
 # ai
 .agent
+# local audit working notes
+.audit/
